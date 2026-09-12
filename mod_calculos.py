@@ -134,17 +134,26 @@ def realizar_login_real_supabase(email_usuario: str, senha_usuario: str) -> dict
         return {"status": "erro", "mensagem": f"❌ Falha de comunicação: {e}"}
 
 def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario_logado: str) -> bool:
-    """Cadastra um novo produto calculando o ID automaticamente pelo Python."""
+    """Cadastra um novo produto calculando o ID de forma incremental global e evita duplicidade por usuário."""
     try:
         supabase = mod_conexao.criar_conexao()
         prod_limpo = nome_produto.strip().lower()
         
+        # 🛡️ CHECAGEM DE DUPLICIDADE: Evita que o mesmo usuário cadastre o mesmo produto duas vezes
+        checagem = supabase.table("produtos").select("id")\
+            .eq("nome_produto", prod_limpo).eq("usuario_id", id_usuario_logado).execute()
+        if checagem.data and len(checagem.data) > 0:
+            return False # Retorna falso porque o item já existe para ele
+            
+        # 🧠 TRUQUE CONTÁBIL: Busca TODOS os IDs do banco para achar o maior número absoluto existente
         todas_linhas = supabase.table("produtos").select("id").execute()
         proximo_id = 1
         if todas_linhas.data:
+            # Captura o maior ID numérico absoluto e soma 1
             maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
             proximo_id = maior_id + 1
             
+        # Grava na nuvem com o ID sequencial perfeito
         supabase.table("produtos").insert({
             "id": proximo_id,
             "nome_produto": prod_limpo,
@@ -155,6 +164,7 @@ def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario
     except Exception as e:
         print(f"Erro ao cadastrar produto: {e}")
         return False
+
 
 def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
     """Grava o novo lançamento calculando o ID de movimento automaticamente pelo Python."""
