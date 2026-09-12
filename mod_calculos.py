@@ -167,31 +167,39 @@ def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario
 
 
 def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
-    """Grava o novo lançamento calculando o ID de movimento automaticamente pelo Python."""
+    """Grava o novo lançamento calculando o ID de movimento de forma blindada contra nulos e formatos de data."""
     try:
         supabase = mod_conexao.criar_conexao()
-        prod_limpo = nome_produto.strip().lower()
+        prod_limpo = str(nome_produto).strip().lower()
+        banco_limpo = str(banco).strip().lower()
         
+        # 🧠 TRUQUE CONTÁBIL: Busca o maior ID absoluto existente na tabela de lançamentos para auto-incremento
         todas_linhas = supabase.table("lancamentos").select("id").execute()
         proximo_id = 1
         if todas_linhas.data:
             maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
             proximo_id = maior_id + 1
             
+        # Busca relacional da categoria amarrada ao produto
         resposta_prod = supabase.table("produtos").select("categoria_id").eq("nome_produto", prod_limpo).execute()
-        categoria_nome = "Não Informado"
+        categoria_nome = "geral" # Valor padrão defensivo para nunca travar a gravação
+        
         if resposta_prod.data and len(resposta_prod.data) > 0:
-            id_categoria = resposta_prod.data["categoria_id"]
+            id_categoria = resposta_prod.data[0]["categoria_id"]
             resposta_cat = supabase.table("categoria").select("categoria").eq("id", id_categoria).execute()
             if resposta_cat.data and len(resposta_cat.data) > 0:
-                categoria_nome = resposta_cat.data["categoria"]
+                categoria_nome = str(resposta_cat.data[0]["categoria"]).strip().lower()
         
-        valor_final = -abs(valor) if tipo == "Despesa" else abs(valor)
+        # Garante o valor negativo para despesas
+        valor_final = -abs(float(valor)) if "despesa" in str(tipo).lower() else abs(float(valor))
+        
+        # 📅 Garante que a data vire uma string aceita pelo banco de dados
+        data_formatada = str(data_lancamento)
         
         dados_lancamento = {
             "id": proximo_id,
-            "created_at": str(data_lancamento),
-            "banco": banco.strip().lower(),
+            "created_at": data_formatada,
+            "banco": banco_limpo,
             "categoria": categoria_nome,
             "nome_produto": prod_limpo,
             "valor": valor_final,
@@ -199,9 +207,9 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
         }
         
         supabase.table("lancamentos").insert(dados_lancamento).execute()
-        st.cache_data.clear()
+        st.cache_data.clear() # Limpa o cache para os gráficos atualizarem na hora
         return True
     except Exception as e:
-        print(f"❌ Erro ao gravar lançamento: {e}")
+        print(f"❌ Erro crítico ao gravar lançamento relacional: {e}")
         return False
 
