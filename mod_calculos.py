@@ -49,6 +49,7 @@ def buscar_todos_lancamentos_completos(id_usuario_logado: str) -> pd.DataFrame:
         df_erro = pd.DataFrame(columns=['id', 'created_at', 'banco', 'categoria', 'nome_produto', 'valor', 'usuario_id'])
         df_erro['created_at'] = pd.to_datetime(df_erro['created_at'])
         return df_erro
+        
 
 def calcular_resumo_memoria(df: pd.DataFrame) -> dict:
     """Calcula os totais do topo direto da memória, sem ir na nuvem de novo."""
@@ -58,6 +59,7 @@ def calcular_resumo_memoria(df: pd.DataFrame) -> dict:
     total_despesas = df[df['valor'] < 0]['valor'].sum()
     saldo_total = df['valor'].sum()
     return {"saldo_total": float(saldo_total), "total_receitas": float(total_receitas), "total_despesas": float(total_despesas)}
+    
 
 def filtrar_extrato_memoria(df: pd.DataFrame, mes: int, ano: int, banco: str) -> pd.DataFrame:
     """Filtra o DataFrame direto da memória por mês, ano e banco, tratando tabelas vazias de novos usuários."""
@@ -75,6 +77,7 @@ def filtrar_extrato_memoria(df: pd.DataFrame, mes: int, ano: int, banco: str) ->
         df_filtrado = df_filtrado.sort_values(by='created_at', ascending=False)
         
     return df_filtrado
+    
 
 def calcular_saldo_historico_memoria(df: pd.DataFrame, mes: int, ano: int, banco: str) -> float:
     """Calcula o saldo histórico progressivo do banco direto da memória com trava de segurança para usuários novos."""
@@ -92,6 +95,7 @@ def calcular_saldo_historico_memoria(df: pd.DataFrame, mes: int, ano: int, banco
         df_historico = df_historico[df_historico['banco'] == banco]
         
     return float(df_historico['valor'].sum())
+    
 
 def obter_despesas_por_categoria_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     """Agrupa as despesas do mês por categoria direto da memória."""
@@ -103,6 +107,7 @@ def obter_despesas_por_categoria_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     df_despesas['valor'] = df_despesas['valor'].abs()
     resumo_cat = df_despesas.groupby('categoria')['valor'].sum().reset_index()
     return resumo_cat.sort_values(by='valor', ascending=False)
+    
 
 def atualizar_lancamento_banco(id_lancamento: int, dados_atualizados: dict) -> bool:
     """Atualiza a linha no Supabase e roda o PROCV automático da categoria."""
@@ -122,6 +127,7 @@ def atualizar_lancamento_banco(id_lancamento: int, dados_atualizados: dict) -> b
     except Exception as e:
         print(f"❌ Erro ao atualizar lançamento: {e}")
         return False
+        
 
 def deletar_lancamento_banco(id_lancamento: int) -> bool:
     """Remove um registro do Supabase usando o ID."""
@@ -133,6 +139,7 @@ def deletar_lancamento_banco(id_lancamento: int) -> bool:
     except Exception as e:
         print(f"❌ Erro ao deletar: {e}")
         return False
+        
 
 def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
     """Grava o novo lançamento na tabela mãe assinando digitalmente com o ID do usuário logado."""
@@ -200,6 +207,8 @@ def obter_evolucao_mensal_faturamento(df: pd.DataFrame, banco: str) -> pd.DataFr
     df_agrupado = df_agrupado.sort_values(by=['Ano', 'Mês_Num']).tail(6)
     
     return df_agrupado
+    
+    
 def obter_maiores_produtos_mes_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     """
     Filtra as despesas do mês e agrupa pelos 5 produtos/itens mais caros,
@@ -222,6 +231,8 @@ def obter_maiores_produtos_mes_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     
     # Ordena do maior gasto para o menor e pega apenas os 5 "campeões" de custo
     return resumo_prod.sort_values(by='valor', ascending=False).head(5)
+    
+    
 def realizar_login_real_supabase(email_usuario: str, senha_usuario: str) -> dict:
     """
     Valida as credenciais do usuário diretamente na nuvem do Supabase.
@@ -251,4 +262,69 @@ def realizar_login_real_supabase(email_usuario: str, senha_usuario: str) -> dict
         if "Invalid login credentials" in erro_texto:
             return {"status": "erro", "mensagem": "⚠️ E-mail ou Senha incorretos!"}
         return {"status": "erro", "mensagem": f"❌ Falha de comunicação com o servidor: {erro_texto}"}
+        
 
+def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario_logado: str) -> bool:
+    """Cadastra um novo produto calculando o ID automaticamente."""
+    try:
+        supabase = mod_conexao.criar_conexao()
+        prod_limpo = nome_produto.strip().lower()
+        
+        # 🧠 TRUQUE CONTÁBIL: Calcula o próximo ID de produtos
+        todas_linhas = supabase.table("produtos").select("id").execute()
+        proximo_id = 1
+        if todas_linhas.data:
+            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
+            proximo_id = maior_id + 1
+            
+        supabase.table("produtos").insert({
+            "id": proximo_id,
+            "nome_produto": prod_limpo,
+            "categoria_id": int(id_categoria),
+            "usuario_id": id_usuario_logado
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"Erro ao cadastrar produto: {e}")
+        return False
+        
+
+def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
+    """Grava o novo lançamento calculando o ID de movimento automaticamente."""
+    try:
+        supabase = mod_conexao.criar_conexao()
+        prod_limpo = nome_produto.strip().lower()
+        
+        # 🧠 TRUQUE CONTÁBIL: Calcula o próximo ID de lançamentos
+        todas_linhas = supabase.table("lancamentos").select("id").execute()
+        proximo_id = 1
+        if todas_linhas.data:
+            maior_id = max([int(linha["id"]) for_linha in todas_linhas.data if linha["id"] is not None], default=0)
+            proximo_id = maior_id + 1
+            
+        resposta_prod = supabase.table("produtos").select("categoria_id").eq("nome_produto", prod_limpo).execute()
+        categoria_nome = "Não Informado"
+        if resposta_prod.data and len(resposta_prod.data) > 0:
+            id_categoria = resposta_prod.data[0]["categoria_id"]
+            resposta_cat = supabase.table("categoria").select("categoria").eq("id", id_categoria).execute()
+            if resposta_cat.data and len(resposta_cat.data) > 0:
+                categoria_nome = resposta_cat.data[0]["categoria"]
+        
+        valor_final = -abs(valor) if tipo == "Despesa (Saída)" else abs(valor)
+        
+        dados_lancamento = {
+            "id": proximo_id, # Injeta o ID calculado
+            "created_at": str(data_lancamento),
+            "banco": banco.strip().lower(),
+            "categoria": categoria_nome,
+            "nome_produto": prod_limpo,
+            "valor": valor_final,
+            "usuario_id": id_usuario_logado
+        }
+        
+        supabase.table("lancamentos").insert(dados_lancamento).execute()
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao gravar lançamento relacional: {e}")
+        return False
