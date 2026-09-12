@@ -279,7 +279,7 @@ else:
             st.write("Insira os dados abaixo para registrar uma despesa ou receita em tempo real.")
             
             # Buscas dinâmicas do Supabase
-            bancos_disponiveis = mod_estruturas.buscar_bancos_reais()
+            bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
             produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
             
             # 🛡️ BLINDAGEM: Adicionamos a opção neutra no topo para abrir totalmente vazio!
