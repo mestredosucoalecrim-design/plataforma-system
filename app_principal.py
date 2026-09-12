@@ -379,7 +379,7 @@ else:
                 if st.button("Confirmar e Gravar Registro", type="primary"):
                     if novo_prod:
                         with st.spinner("Gravando no Supabase..."):
-                            resultado = mod_estruturas.cadastrar_novo_produto(novo_prod, id_cat_selecionado)
+                            resultado = mod_calculos.cadastrar_novo_produto_real(novo_prod, id_cat_selecionado, st.session_state.usuario_id)
                         
                         if resultado == "sucesso":
                             st.success(f"🎉 Sucesso! O produto '{novo_prod.lower()}' foi indexado na categoria '{cat_escolhida_nome}' (ID: {id_cat_selecionado}).")
