@@ -93,8 +93,8 @@ else:
         # Painel fixo do topo
         col1, col2, col3 = st.columns(3)
         col1.metric(label="Saldo Geral Consolidado", value=f"R$ {resumo['saldo']:,.2f}")
-        col2.metric(label="Total de Receitas", value=f"R$ {resumo['total_receitas']:,.2f}")
-        col3.metric(label="Total de Despesas", value=f"R$ {resumo['total_despesas']:,.2f}")
+        col2.metric(label="Total de Receitas", value=f"R$ {resumo['receitas']:,.2f}")
+        col3.metric(label="Total de Despesas", value=f"R$ {resumo['despesas']:,.2f}")
         
         st.markdown("---")
         st.subheader("Consulte seu Extrato")
