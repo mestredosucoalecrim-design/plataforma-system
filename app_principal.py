@@ -399,7 +399,7 @@ else:
                 # 1ª Combobox: Escolha da categoria antiga
                 cat_filtro_origem = st.selectbox(
                     "1º Passo: Selecione a Categoria ATUAL do item:", 
-                    ["-- Escolha --"] + lista_nomes_cat, 
+                    ["-- Escolha --"] + lista_cat, 
                     key="sb_cat_origem"
                 )
                 
