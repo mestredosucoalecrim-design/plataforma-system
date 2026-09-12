@@ -365,7 +365,7 @@ else:
             st.subheader("📦 Vincular Novo Produto a uma Categoria")
             st.write("Insira o nome do item e selecione a qual grupo de despesa ele pertence.")
             
-        # 🛡️ BUSCA E VINCULAÇÃO RELACIONAL BLINDADA DE CATEGORIAS
+                # 🛡️ BUSCA E VINCULAÇÃO RELACIONAL BLINDADA DE CATEGORIAS
         df_categorias = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
         if not df_categorias.empty:
             # Monta um dicionário prático: "Nome da Categoria": id_numérico
@@ -378,18 +378,17 @@ else:
             novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
                 
             if st.button("Confirmar e Gravar Registro", type="primary"):
-                    if novo_prod:
-                        with st.spinner("Gravando no Supabase..."):
-                            resultado = mod_calculos.cadastrar_novo_produto_real(novo_prod, id_cat_selecionado, st.session_state.usuario_id)
-                        
-                        if resultado == "sucesso":
-                            st.success(f"🎉 Sucesso! O produto '{novo_prod.lower()}' foi indexado na categoria '{cat_escolhida_nome}' (ID: {id_cat_selecionado}).")
-                        elif resultado == "duplicado":
-                            st.warning(f"⚠️ Operação Recusada: O produto '{novo_prod.lower()}' já existe no sistema.")
-                        else:
-                            st.error("❌ O banco rejeitou a gravação.")
+                if novo_prod:
+                    with st.spinner("Gravando no Supabase..."):
+                        # O motor retorna True ou False
+                        sucesso_gravacao = mod_calculos.cadastrar_novo_produto_real(novo_prod, id_cat_selecionado, st.session_state.usuario_id)
+                    
+                    if sucesso_gravacao:
+                        st.success(f"🎉 Sucesso! O produto '{novo_prod.lower()}' foi indexado na categoria '{cat_selecionada}' (ID: {id_cat_selecionado}).")
                     else:
-                        st.warning("⚠️ Campo obrigatório: Digite o nome do produto antes de gravar.")
+                        st.error("❌ O banco rejeitou a gravação ou o produto já está duplicado para o seu usuário.")
+                else:
+                    st.warning("⚠️ Campo obrigatório: Digite o nome do produto antes de gravar.")
 
             # 🛠️ O Painel de Alterações Focado (Estilo UserForm)
             st.markdown("---")
