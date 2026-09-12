@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 URL_SUPABASE = os.getenv("SUPABASE_URL")
-CHAVE_SUPABASE = chave = st.secrets.get("SUPABASE_KEY") or os.get_env("SUPABASE_KEY")
+CHAVE_SUPABASE = chave =  os.get_env("SUPABASE_KEY")
 
 def criar_conexao() -> Client:
     """Estabelece e retorna a conexão oficial com o cliente Supabase."""
