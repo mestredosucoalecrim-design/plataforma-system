@@ -64,19 +64,29 @@ def buscar_bancos_reais(id_usuario_logado: str) -> list:
         return []
 
 def cadastrar_novo_banco_real(nome_banco: str, id_usuario_logado: str) -> str:
-    """Grava o novo banco na tabela vinculando ao ID do usuário logado."""
+    """Grava o novo banco calculando o ID autoincremento via Python."""
     try:
         supabase = mod_conexao.criar_conexao()
         nome_limpo = nome_banco.strip().lower()
         
-        # Checa duplicidade apenas nos bancos DESTE usuário
-        checagem = supabase.table("banco").select("banco")\
-            .eq("banco", nome_limpo).eq("usuario_id", id_usuario_logado).execute()
+        # Checa duplicidade
+        checagem = supabase.table("banco").select("banco").eq("banco", nome_limpo).eq("usuario_id", id_usuario_logado).execute()
         if checagem.data:
             return "duplicado"
             
-        # Grava assinando digitalmente com o ID do cliente
-        supabase.table("banco").insert({"banco": nome_limpo, "usuario_id": id_usuario_logado}).execute()
+        # 🧠 TRUQUE CONTÁBIL: Busca o maior ID existente para calcular o próximo
+        todas_linhas = supabase.table("banco").select("id").execute()
+        proximo_id = 1
+        if todas_linhas.data:
+            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
+            proximo_id = maior_id + 1
+            
+        # Grava enviando o ID calculado manualmente para burlar o erro 23502
+        supabase.table("banco").insert({
+            "id": proximo_id, 
+            "banco": nome_limpo, 
+            "usuario_id": id_usuario_logado
+        }).execute()
         return "sucesso"
     except Exception as e:
         print(f"Erro ao salvar novo banco protegido: {e}")
@@ -92,41 +102,35 @@ def deletar_banco_real(nome_banco: str) -> bool:
         print(f"Erro ao deletar banco: {e}")
         return False
     
-def cadastrar_nova_categoria_real(nome_categoria: str) -> str:
-    """
-    Grava uma nova categoria calculando o próximo ID disponível de forma sequencial,
-    blindando o sistema contra erros de sincronismo de chave primária.
-    """
+def cadastrar_novo_banco_real(nome_banco: str, id_usuario_logado: str) -> str:
+    """Grava o novo banco calculando o ID autoincremento via Python."""
     try:
         supabase = mod_conexao.criar_conexao()
-        nome_limpo = nome_categoria.strip()
+        nome_limpo = nome_banco.strip().lower()
         
-        # 1. Trava defensiva contra duplicidade de texto
-        checagem = supabase.table("categoria").select("categoria").eq("categoria", nome_limpo).execute()
+        # Checa duplicidade
+        checagem = supabase.table("banco").select("banco").eq("banco", nome_limpo).eq("usuario_id", id_usuario_logado).execute()
         if checagem.data:
             return "duplicado"
             
-        # 2. INTELEGÊNCIA MÁXIMA: Busca todos os IDs existentes para calcular o próximo número livre (Max + 1)
-        todos_ids = supabase.table("categoria").select("id").execute()
-        
+        # 🧠 TRUQUE CONTÁBIL: Busca o maior ID existente para calcular o próximo
+        todas_linhas = supabase.table("banco").select("id").execute()
         proximo_id = 1
-        if todos_ids.data:
-            df_ids = pd.DataFrame(todos_ids.data)
-            # Pega o maior ID numérico da tabela e soma 1
-            proximo_id = int(df_ids['id'].max() + 1)
+        if todas_linhas.data:
+            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
+            proximo_id = maior_id + 1
             
-        # 3. Monta os dados forçando o ID sequencial correto
-        dados_categoria = {
-            "id": proximo_id,
-            "categoria": nome_limpo
-        }
-        
-        print(f"📁 Tentando gravar nova categoria relacional: {dados_categoria}")
-        supabase.table("categoria").insert(dados_categoria).execute()
+        # Grava enviando o ID calculado manualmente para burlar o erro 23502
+        supabase.table("banco").insert({
+            "id": proximo_id, 
+            "banco": nome_limpo, 
+            "usuario_id": id_usuario_logado
+        }).execute()
         return "sucesso"
     except Exception as e:
-        print(f"❌ Erro crítico ao salvar nova categoria no Supabase: {e}")
+        print(f"Erro ao salvar novo banco protegido: {e}")
         return "erro"
+        
 def buscar_produtos_por_nome_categoria(nome_categoria: str) -> list:
     """Busca apenas os produtos que pertencem a uma determinada categoria textual."""
     try:
