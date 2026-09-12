@@ -375,7 +375,7 @@ else:
             cat_selecionada = st.selectbox("Escolha a Categoria para Vincular:", lista_cat)
             id_cat_selecionado = int(dict_categorias[cat_selecionada]) # Garante formato INT bruto
 
-                novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
+            novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
                 
                 if st.button("Confirmar e Gravar Registro", type="primary"):
                     if novo_prod:
