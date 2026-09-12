@@ -299,7 +299,7 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
         todas_linhas = supabase.table("lancamentos").select("id").execute()
         proximo_id = 1
         if todas_linhas.data:
-            maior_id = max([int(linha["id"]) for_linha in todas_linhas.data if linha["id"] is not None], default=0)
+            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
             proximo_id = maior_id + 1
             
         resposta_prod = supabase.table("produtos").select("categoria_id").eq("nome_produto", prod_limpo).execute()
