@@ -365,15 +365,16 @@ else:
             st.subheader("📦 Vincular Novo Produto a uma Categoria")
             st.write("Insira o nome do item e selecione a qual grupo de despesa ele pertence.")
             
-            df_categorias = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
+        # 🛡️ BUSCA E VINCULAÇÃO RELACIONAL BLINDADA DE CATEGORIAS
+        df_categorias = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
+        if not df_categorias.empty:
+            # Monta um dicionário prático: "Nome da Categoria": id_numérico
+            dict_categorias = dict(zip(df_categorias["categoria"].str.upper(), df_categorias["id"]))
+            lista_cat = list(dict_categorias.keys())
             
-            if df_categorias.empty:
-                st.warning("⚠️ Nenhuma categoria encontrada na tabela 'categoria' do Supabase. Cadastre uma categoria acima primeiro.")
-            else:
-                lista_nomes_cat = df_categorias['categoria'].tolist()
-                cat_escolhida_nome = st.selectbox("1º Passo: Escolha a Categoria Contábil:", lista_nomes_cat)
-                
-                id_cat_selecionado = int(df_categorias[df_categorias['categoria'] == cat_escolhida_nome]['id'].values[0])
+            cat_selecionada = st.selectbox("Escolha a Categoria para Vincular:", lista_cat)
+            id_cat_selecionado = int(dict_categorias[cat_selecionada]) # Garante formato INT bruto
+
                 novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
                 
                 if st.button("Confirmar e Gravar Registro", type="primary"):
