@@ -214,3 +214,15 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
         print(f"❌ Erro crítico ao gravar lançamento relacional: {e}")
         return False
 
+
+def obter_despesas_por_categoria_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
+    """Agrupa e calcula o total de despesas por categoria para o gráfico horizontal."""
+    if df_mes.empty or 'valor' not in df_mes.columns or 'categoria' not in df_mes.columns:
+        return pd.DataFrame(columns=['categoria', 'valor'])
+    df_despesas = df_mes[df_mes['valor'] < 0].copy()
+    if df_despesas.empty:
+        return pd.DataFrame(columns=['categoria', 'valor'])
+    df_despesas['valor'] = df_despesas['valor'].abs()
+    resumo_cat = df_despesas.groupby('categoria')['valor'].sum().reset_index()
+    return resumo_cat.sort_values(by='valor', ascending=False)
+
