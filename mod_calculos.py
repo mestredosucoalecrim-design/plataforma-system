@@ -147,7 +147,7 @@ def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario
         todas_linhas = supabase.table("produtos").select("id").execute()
         proximo_id = 1
         if todas_linhas.data:
-            maior_id = max([int(linha["id"]) for_linha in todas_linhas.data if linha["id"] is not None], default=0)
+            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
             proximo_id = maior_id + 1
             
         supabase.table("produtos").insert({
