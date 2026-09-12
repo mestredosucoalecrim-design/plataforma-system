@@ -58,7 +58,7 @@ if not st.session_state.logado:
                 
     with aba_cadastro:
         st.write("### Formulário de Cadastro")
-        st.info("Para esta fase de homologação, os novos usuários devem ser cadastrados via convite ou diretamente pelo Administrador no painel do Supabase.")
+        #st.info("Para esta fase de homologação, os novos usuários devem ser cadastrados via convite ou diretamente pelo Administrador no painel do Supabase.")
 
 
 # =========================================================================
