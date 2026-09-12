@@ -349,7 +349,7 @@ else:
                 if nova_cat_nome:
                     with st.spinner("Gravando categoria na nuvem..."):
                         # Envia o comando de inserção para o Supabase
-                        resultado_cat = mod_estruturas.cadastrar_nova_categoria_real(nova_cat_nome)
+                        resultado_cat = mod_estruturas.cadastrar_nova_categoria_real(nova_cat_nome, st.session_state.usuario_id)
                     if resultado_cat == "sucesso":
                         st.success(f"🎉 Categoria '{nova_cat_nome}' cadastrada com sucesso!")
                         st.cache_data.clear()
