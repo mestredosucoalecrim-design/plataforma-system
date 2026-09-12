@@ -194,8 +194,9 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
         valor_final = -abs(float(valor)) if "despesa" in str(tipo).lower() else abs(float(valor))
         
         # 📅 Garante que a data vire uma string aceita pelo banco de dados
-        data_formatada = str(data_lancamento)
-        
+        # 📅 Converte a data do Streamlit para o formato Timestamp completo exigido pelo Supabase (ISO 8601 com Fuso Horário)
+            data_formatada = f"{data_lancamento}T00:00:00+00:00"
+      
         dados_lancamento = {
             "id": proximo_id,
             "created_at": data_formatada,
