@@ -186,7 +186,7 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
             if resposta_cat.data and len(resposta_cat.data) > 0:
                 categoria_nome = resposta_cat.data["categoria"]
         
-        valor_final = -abs(valor) if tipo == "Despesa (Saída)" else abs(valor)
+        valor_final = -abs(valor) if tipo == "Despesa" else abs(valor)
         
         dados_lancamento = {
             "id": proximo_id,
