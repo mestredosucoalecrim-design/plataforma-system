@@ -134,26 +134,22 @@ def realizar_login_real_supabase(email_usuario: str, senha_usuario: str) -> dict
         return {"status": "erro", "mensagem": f"❌ Falha de comunicação: {e}"}
 
 def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario_logado: str) -> bool:
-    """Cadastra um novo produto calculando o ID de forma incremental global e evita duplicidade por usuário."""
+    """Cadastra um novo produto calculando o ID de forma incremental global."""
     try:
         supabase = mod_conexao.criar_conexao()
         prod_limpo = nome_produto.strip().lower()
         
-        # 🛡️ CHECAGEM DE DUPLICIDADE: Evita que o mesmo usuário cadastre o mesmo produto duas vezes
         checagem = supabase.table("produtos").select("id")\
             .eq("nome_produto", prod_limpo).eq("usuario_id", id_usuario_logado).execute()
         if checagem.data and len(checagem.data) > 0:
-            return False # Retorna falso porque o item já existe para ele
+            return False
             
-        # 🧠 TRUQUE CONTÁBIL: Busca TODOS os IDs do banco para achar o maior número absoluto existente
         todas_linhas = supabase.table("produtos").select("id").execute()
         proximo_id = 1
         if todas_linhas.data:
-            # Captura o maior ID numérico absoluto e soma 1
-            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
+            maior_id = max([int(linha["id"]) for_linha in todas_linhas.data if linha["id"] is not None], default=0)
             proximo_id = maior_id + 1
             
-        # Grava na nuvem com o ID sequencial perfeito
         supabase.table("produtos").insert({
             "id": proximo_id,
             "nome_produto": prod_limpo,
@@ -165,24 +161,15 @@ def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario
         print(f"Erro ao cadastrar produto: {e}")
         return False
 
-
 def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
-    """Grava o novo lançamento calculando o ID de movimento de forma blindada contra nulos e formatos de data."""
+    """Grava o novo lançamento deixando o ID autoincremento por conta do Supabase."""
     try:
         supabase = mod_conexao.criar_conexao()
         prod_limpo = str(nome_produto).strip().lower()
         banco_limpo = str(banco).strip().lower()
         
-        # 🧠 TRUQUE CONTÁBIL: Busca o maior ID absoluto existente na tabela de lançamentos para auto-incremento
-        todas_linhas = supabase.table("lancamentos").select("id").execute()
-        proximo_id = 1
-        if todas_linhas.data:
-            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
-            proximo_id = maior_id + 1
-            
-        # Busca relacional da categoria amarrada ao produto
         resposta_prod = supabase.table("produtos").select("categoria_id").eq("nome_produto", prod_limpo).execute()
-        categoria_nome = "geral" # Valor padrão defensivo para nunca travar a gravação
+        categoria_nome = "geral"
         
         if resposta_prod.data and len(resposta_prod.data) > 0:
             id_categoria = resposta_prod.data[0]["categoria_id"]
@@ -190,15 +177,10 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
             if resposta_cat.data and len(resposta_cat.data) > 0:
                 categoria_nome = str(resposta_cat.data[0]["categoria"]).strip().lower()
         
-        # Garante o valor negativo para despesas
         valor_final = -abs(float(valor)) if "despesa" in str(tipo).lower() else abs(float(valor))
+        data_formatada = f"{data_lancamento}T00:00:00+00:00"
         
-        # 📅 Garante que a data vire uma string aceita pelo banco de dados
-        # 📅 Converte a data do Streamlit para o formato Timestamp completo exigido pelo Supabase (ISO 8601 com Fuso Horário)
-            data_formatada = f"{data_lancamento}T00:00:00+00:00"
-      
         dados_lancamento = {
-            "id": proximo_id,
             "created_at": data_formatada,
             "banco": banco_limpo,
             "categoria": categoria_nome,
@@ -208,12 +190,11 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
         }
         
         supabase.table("lancamentos").insert(dados_lancamento).execute()
-        st.cache_data.clear() # Limpa o cache para os gráficos atualizarem na hora
+        st.cache_data.clear()
         return True
     except Exception as e:
         print(f"❌ Erro crítico ao gravar lançamento relacional: {e}")
         return False
-
 
 def obter_despesas_por_categoria_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     """Agrupa e calcula o total de despesas por categoria para o gráfico horizontal."""
@@ -225,4 +206,3 @@ def obter_despesas_por_categoria_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     df_despesas['valor'] = df_despesas['valor'].abs()
     resumo_cat = df_despesas.groupby('categoria')['valor'].sum().reset_index()
     return resumo_cat.sort_values(by='valor', ascending=False)
-
