@@ -510,6 +510,9 @@ else:
             # Buscas dinâmicas do Supabase
             bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
             produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
+            
+            # Garante que a lista exista na memória, mesmo se o usuário for novo e não tiver dados cadastrados
+            lista_bancos_reais = []
 
             if not lista_bancos_reais:
                 st.info("Nenhum banco cadastrado na tabela física do Supabase.")
