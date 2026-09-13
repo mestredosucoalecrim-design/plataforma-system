@@ -206,3 +206,19 @@ def obter_despesas_por_categoria_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     df_despesas['valor'] = df_despesas['valor'].abs()
     resumo_cat = df_despesas.groupby('categoria')['valor'].sum().reset_index()
     return resumo_cat.sort_values(by='valor', ascending=False)
+
+def realizar_cadastro_supabase(email_usuario: str, senha_usuario: str) -> dict:
+    """Cria um novo usuário de forma pública no banco Supabase Auth."""
+    try:
+        supabase = mod_conexao.criar_conexao()
+        resposta = supabase.auth.sign_up({
+            "email": email_usuario.strip(),
+            "password": senha_usuario.strip()
+        })
+        if resposta.user:
+            return {"status": "sucesso", "mensagem": "Conta criada com sucesso!"}
+        return {"status": "erro", "mensagem": "Não foi possível processar o cadastro."}
+    except Exception as e:
+        if "already registered" in str(e).lower() or "already exists" in str(e).lower():
+            return {"status": "erro", "mensagem": "⚠️ Este e-mail já está cadastrado no sistema!"}
+        return {"status": "erro", "mensagem": f"❌ Falha de comunicação: {e}"}
