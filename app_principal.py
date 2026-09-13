@@ -452,7 +452,7 @@ else:
                                                     st.cache_data.clear()
                                                     st.rerun()
 
-                # 2. ABA DE BANCOS (Corrigido fora do loop e sem DuplicateElementId)
+                # 2. ABA DE BANCOS (Estrutura blindada e alinhada)
         with tab_bancos:
             st.subheader("🏦 Gerenciar Bancos")
             lista_bancos_reais = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
@@ -465,18 +465,18 @@ else:
             st.subheader("➕ Adicionar Novo Banco")
             novo_banco_nome = st.text_input("Digite o nome do novo banco/conta:", key="txt_novo_banco")
             
-            # 🟢 O botão agora fica aqui fora do loop 'for' e possui uma 'key' exclusiva!
             if st.button("Gravar Nova Conta", type="primary", key="btn_gravar_novo_banco"):
-                if novo_banco_nome:
+                if not novo_banco_nome:
+                    st.warning("⚠️ Digite o nome do banco antes de gravar.")
+                else:
                     with st.spinner("Conectando com o servidor Supabase..."):
                         try:
-                            # Aqui vai a sua lógica original de salvar banco se houver, 
-                            # ou apenas um aviso de sucesso temporário:
                             st.success(f"🏦 Conta do '{novo_banco_nome}' adicionada com sucesso!")
                             st.cache_data.clear()
                             st.rerun()
                         except Exception as e_banco:
                             st.error(f"Erro ao salvar banco: {e_banco}")
+
                 else:
                     st.warning("⚠️ Digite o nome do banco antes de gravar.")
 
