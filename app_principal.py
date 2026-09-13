@@ -480,7 +480,7 @@ else:
             else:
                 st.warning("⚠️ Digite o nome do banco antes de gravar.")
 
-        elif resultado_banco == "duplicado":
+            elif resultado_banco == "duplicado":
                         st.warning(f"⚠️ Operação Recusada: A conta '{novo_banco_nome.upper()}' já existe no sistema.")
             else:
                 st.error("❌ O servidor rejeitou a gravação. Verifique a conexão.")
