@@ -402,7 +402,7 @@ else:
             id_cat_selecionado = int(dict_categorias[cat_selecionada]) # Garante formato INT bruto
             novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
                 
-                if st.button("Confirmar e Gravar Registro", type="primary"):
+            if st.button("Confirmar e Gravar Registro", type="primary"):
                     if novo_prod:
                         with st.spinner("Gravando no Supabase..."):
                             resultado = mod_calculos.cadastrar_novo_produto_real(novo_prod, id_cat_selecionado, st.session_state.usuario_id)
