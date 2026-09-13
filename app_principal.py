@@ -364,7 +364,7 @@ else:
         
         tab_produtos, tab_bancos = st.tabs(["📦 Cadastro de Produtos e Categorias", "🏦 Bancos e Contas Ativas"])
         
-        # 1. ABA DE PRODUTOS E CATEGORIAS
+                # 1. ABA DE PRODUTOS E CATEGORIAS
         with tab_produtos:
             # ➕ NOVO BLOCO: Cadastrar Nova Categoria Contábil
             st.subheader("📁 Cadastrar Nova Categoria")
@@ -373,7 +373,6 @@ else:
             if st.button("Gravar Nova Categoria", type="secondary"):
                 if nova_cat_nome:
                     with st.spinner("Gravando categoria na nuvem..."):
-                        # Envia o comando de inserção para o Supabase
                         resultado_cat = mod_estruturas.cadastrar_nova_categoria_real(nova_cat_nome, st.session_state.usuario_id)
 
                     if resultado_cat == "sucesso":
@@ -391,29 +390,31 @@ else:
             st.subheader("📦 Vincular Novo Produto a uma Categoria")
             st.write("Insira o nome do item e selecione a qual grupo de despesa ele pertence.")
             
-        # 🛡️ BUSCA E VINCULAÇÃO RELACIONAL BLINDADA DE CATEGORIAS
-        df_categorias = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
-        if not df_categorias.empty:
-
-        # Monta um dicionário prático: "Nome da Categoria": id_numérico
-            dict_categorias = dict(zip(df_categorias["categoria"].str.upper(), df_categorias["id"]))
-            lista_cat = list(dict_categorias.keys())
-            
-            cat_selecionada = st.selectbox("Escolha a Categoria para Vincular:", lista_cat)
-            id_cat_selecionado = int(dict_categorias[cat_selecionada]) # Garante formato INT bruto
-            novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
+            # 🛡️ BUSCA E VINCULAÇÃO RELACIONAL BLINDADA DE CATEGORIAS
+            df_categorias = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
+            if not df_categorias.empty:
+                # Monta um dicionário prático: "Nome da Categoria": id_numérico
+                dict_categorias = dict(zip(df_categorias["categoria"].str.upper(), df_categorias["id"]))
+                lista_cat = list(dict_categorias.keys())
                 
-            if st.button("Confirmar e Gravar Registro", type="primary"):
+                cat_selecionada = st.selectbox("Escolha a Categoria para Vincular:", lista_cat)
+                id_cat_selecionado = int(dict_categorias[cat_selecionada]) # Garante formato INT bruto
+                novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
+                
+                if st.button("Confirmar e Gravar Registro", type="primary"):
                     if novo_prod:
                         with st.spinner("Gravando no Supabase..."):
                             resultado = mod_calculos.cadastrar_novo_produto_real(novo_prod, id_cat_selecionado, st.session_state.usuario_id)
                         
-                        if resultado == "sucesso":
-                            st.success(f"🎉 Sucesso! O produto '{novo_prod.lower()}' foi indexado na categoria '{cat_escolhida_nome}' (ID: {id_cat_selecionado}).")
+                        # 🟢 CORREÇÃO DA VALIDAÇÃO (A função retorna True/False em vez de texto):
+                        if resultado is True:
+                            st.success(f"🎉 Sucesso! O produto '{novo_prod.lower()}' foi indexado na categoria '{cat_selecionada}' (ID: {id_cat_selecionado}).")
+                            st.cache_data.clear()
+                            st.rerun()
                         elif resultado == "duplicado":
                             st.warning(f"⚠️ Operação Recusada: O produto '{novo_prod.lower()}' já existe no sistema.")
                         else:
-                            st.error("❌ O banco rejeitou a gravação.")
+                            st.error("❌ O banco rejeitou a gravação ou houve um erro interno.")
                     else:
                         st.warning("⚠️ Campo obrigatório: Digite o nome do produto antes de gravar.")
 
@@ -431,7 +432,6 @@ else:
                 )
                 
                 if cat_filtro_origem != "-- Escolha --":
-                    # O Python vai no banco e traz APENAS os produtos dessa categoria!
                     produtos_filtrados = mod_estruturas.buscar_produtos_por_nome_categoria(cat_filtro_origem)
                     
                     if not produtos_filtrados:
@@ -448,21 +448,17 @@ else:
                             # 3ª Combobox: Escolha da nova categoria destino
                             cat_destino_nome = st.selectbox(
                                 f"3º Passo: Mova '{produto_para_corrigir.upper()}' para a NOVA Categoria:", 
-                                ["-- Selecione a Nova Categoria --"] + lista_nomes_cat,
+                                ["-- Selecione a Nova Categoria --"] + lista_cat,
                                 key="sb_cat_destino"
                             )
                             
                             if cat_destino_nome != "-- Selecione a Nova Categoria --":
-                                # Trava de segurança: impede escolher a mesma categoria
                                 if cat_filtro_origem == cat_destino_nome:
                                     st.warning("⚠️ Operação Inválida: A nova categoria deve ser diferente da atual!")
                                 else:
-                                    st.write("") # Espaçador visual
-                                if st.button(f"🚀 Executar Atualização em Lote de '{produto_para_corrigir.upper()}'", type="primary"):
-                                        # 1. Descobre o ID da nova categoria selecionada
+                                    if st.button(f"🚀 Executar Atualização em Lote de '{produto_para_corrigir.upper()}'", type="primary"):
                                         id_nova_cat = int(df_categorias[df_categorias['categoria'] == cat_destino_nome]['id'].values[0])
                                         
-                                        # 2. Busca o ID real do produto direto no Supabase de forma rápida
                                         import mod_conexao
                                         supabase_busca = mod_conexao.criar_conexao()
                                         res_prod = supabase_busca.table("produtos").select("id").eq("nome_produto", produto_para_corrigir.strip().lower()).execute()
@@ -470,15 +466,14 @@ else:
                                         if res_prod.data:
                                             id_real_prod = int(res_prod.data[0]["id"])
                                             
-                                            # 3. Dispara o gatilho atômico que reclassifica e varre o passado de 18k linhas!
-                                            with st.spinner(f"Varrendo histórico... Reclassificando de '{cat_filtro_origem}' para '{cat_destino_nome}'..."):
+                                            with st.spinner(f"Varrendo histórico... Reclassificando..."):
                                                 if mod_estruturas.atualizar_categoria_produto_e_retroativos(id_real_prod, produto_para_corrigir, id_nova_cat, cat_destino_nome):
-                                                    st.success(f"🎉 Sucesso Absoluto! '{produto_para_corrigir.upper()}' foi reclassificado para '{cat_destino_nome}' em todo o histórico!")
+                                                    st.success(f"🎉 Sucesso Absoluto! '{produto_para_corrigir.upper()}' foi reclassificado!")
                                                     st.balloons()
-                                                    st.cache_data.clear() # Limpa a memória para os saldos e gráficos atualizarem na hora
+                                                    st.cache_data.clear()
                                                     st.rerun()
                                                 else:
-                                                    st.error("Erro técnico ao tentar varrer o histórico no Supabase.")
+                                                    st.error("Erro técnico ao tentar varrer o histórico.")
                         
         # 2. ABA DE BANCOS (Sincronizada direto com a tabela public.banco!)
         with tab_bancos:
