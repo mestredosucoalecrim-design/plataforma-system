@@ -452,7 +452,7 @@ else:
                                                     st.cache_data.clear()
                                                     st.rerun()
 
-        # 2. ABA DE BANCOS (Estrutura blindada e alinhada)
+                # 2. ABA DE BANCOS (Estrutura blindada e alinhada)
         with tab_bancos:
             st.subheader("🏦 Gerenciar Bancos")
             lista_bancos_reais = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
@@ -476,17 +476,7 @@ else:
                             st.rerun()
                         except Exception as e_banco:
                             st.error(f"Erro ao salvar banco: {e_banco}")
-
-            else:
-                st.warning("⚠️ Digite o nome do banco antes de gravar.")
-
-                elif resultado_banco == "duplicado":
-                        st.warning(f"⚠️ Operação Recusada: A conta '{novo_banco_nome.upper()}' já existe no sistema.")
-            else:
-                st.error("❌ O servidor rejeitou a gravação. Verifique a conexão.")
-                    else:
-                        st.warning("⚠️ Campo obrigatório: Digite o nome da conta antes de gravar.")
-            
+                        
             st.markdown("---")
             st.write("📋 **Contas Operacionais Ativas na Nuvem:**")
             
