@@ -477,7 +477,7 @@ else:
                         except Exception as e_banco:
                             st.error(f"Erro ao salvar banco: {e_banco}")
 
-                else:
+                    else:
                     st.warning("⚠️ Digite o nome do banco antes de gravar.")
 
             elif resultado_banco == "duplicado":
