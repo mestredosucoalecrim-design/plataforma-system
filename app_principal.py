@@ -395,8 +395,8 @@ else:
         if not df_categorias.empty:
 
         # Monta um dicionário prático: "Nome da Categoria": id_numérico
-        dict_categorias = dict(zip(df_categorias["categoria"].str.upper(), df_categorias["id"]))
-        lista_cat = list(dict_categorias.keys())
+            dict_categorias = dict(zip(df_categorias["categoria"].str.upper(), df_categorias["id"]))
+            lista_cat = list(dict_categorias.keys())
             
             cat_selecionada = st.selectbox("Escolha a Categoria para Vincular:", lista_cat)
             id_cat_selecionado = int(dict_categorias[cat_selecionada]) # Garante formato INT bruto
