@@ -134,22 +134,26 @@ def realizar_login_real_supabase(email_usuario: str, senha_usuario: str) -> dict
         return {"status": "erro", "mensagem": f"❌ Falha de comunicação: {e}"}
 
 def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario_logado: str) -> bool:
-    """Cadastra um novo produto calculando o ID de forma incremental global."""
+    """Cadastra um novo produto calculando o ID de forma incremental global real."""
     try:
         supabase = mod_conexao.criar_conexao()
         prod_limpo = nome_produto.strip().lower()
         
+        # 1. Verifica se ESTE usuário já tem esse produto cadastrado
         checagem = supabase.table("produtos").select("id")\
             .eq("nome_produto", prod_limpo).eq("usuario_id", id_usuario_logado).execute()
         if checagem.data and len(checagem.data) > 0:
             return False
             
-        todas_linhas = supabase.table("produtos").select("id").execute()
+        # 2. 🟢 CORREÇÃO: Busca o maior ID global fazendo um select ordenado do maior para o menor
+        resposta_maior = supabase.table("produtos").select("id").order("id", descending=True).limit(1).execute()
+        
         proximo_id = 1
-        if todas_linhas.data:
-            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
+        if resposta_maior.data and len(resposta_maior.data) > 0:
+            maior_id = int(resposta_maior.data[0]["id"])
             proximo_id = maior_id + 1
             
+        # 3. Insere o novo produto com o ID correto e único
         supabase.table("produtos").insert({
             "id": proximo_id,
             "nome_produto": prod_limpo,
@@ -160,6 +164,7 @@ def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario
     except Exception as e:
         print(f"Erro ao cadastrar produto: {e}")
         return False
+
 
 def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
     """Grava o novo lançamento deixando o ID autoincremento por conta do Supabase."""
