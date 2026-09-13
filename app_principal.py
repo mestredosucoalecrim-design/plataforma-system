@@ -57,7 +57,7 @@ if not st.session_state.logado:
                 st.warning("⚠️ Campo obrigatório: Preencha o e-mail e a senha para acessar.")
                 
                 with aba_cadastro:
-                st.write("### Formulário de Cadastro")
+                     st.write("### Formulário de Cadastro")
         
         # 🟢 ESSES SÃO OS CAMPOS QUE ESTÃO FALTANDO NA SUA TELA:
         novo_email = st.text_input("Defina seu E-mail de Acesso:", placeholder="seu-email@sistema.com", key="txt_cadastro_email")
