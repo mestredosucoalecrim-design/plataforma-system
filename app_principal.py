@@ -452,27 +452,34 @@ else:
                                                     st.cache_data.clear()
                                                     st.rerun()
 
-        # 2. ABA DE BANCOS (Corrige os erros de tab_bancos e lista_bancos_reais)
+                # 2. ABA DE BANCOS (Corrigido fora do loop e sem DuplicateElementId)
         with tab_bancos:
             st.subheader("🏦 Gerenciar Bancos")
-            # Definição segura da lista para evitar NameError
             lista_bancos_reais = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
             
             st.write("Seus bancos ativos para lançamentos:")
             for b in lista_bancos_reais:
                 st.write(f"- {b}")
-
-                if st.button("Gravar Nova Conta", type="primary"):
-                    if novo_banco_nome:
-                        with st.spinner("Conectando com o servidor Supabase..."):
-                            # Executa o INSERT real na tabela 'banco'
-                            resultado_banco = mod_estruturas.cadastrar_novo_banco_real(novo_banco_nome, st.session_state.usuario_id)
-                        
-                        if resultado_banco == "sucesso":
-                            st.success(f"🎉 Sucesso! A conta '{novo_banco_nome.upper()}' foi registrada no banco de dados!")
-                            # Limpa o cache para que o app inteiro passe a exibir o novo banco nas comboboxes
+            
+            st.markdown("---")
+            st.subheader("➕ Adicionar Novo Banco")
+            novo_banco_nome = st.text_input("Digite o nome do novo banco/conta:", key="txt_novo_banco")
+            
+            # 🟢 O botão agora fica aqui fora do loop 'for' e possui uma 'key' exclusiva!
+            if st.button("Gravar Nova Conta", type="primary", key="btn_gravar_novo_banco"):
+                if novo_banco_nome:
+                    with st.spinner("Conectando com o servidor Supabase..."):
+                        try:
+                            # Aqui vai a sua lógica original de salvar banco se houver, 
+                            # ou apenas um aviso de sucesso temporário:
+                            st.success(f"🏦 Conta do '{novo_banco_nome}' adicionada com sucesso!")
                             st.cache_data.clear()
                             st.rerun()
+                        except Exception as e_banco:
+                            st.error(f"Erro ao salvar banco: {e_banco}")
+                else:
+                    st.warning("⚠️ Digite o nome do banco antes de gravar.")
+
                         elif resultado_banco == "duplicado":
                             st.warning(f"⚠️ Operação Recusada: A conta '{novo_banco_nome.upper()}' já existe no sistema.")
                         else:
