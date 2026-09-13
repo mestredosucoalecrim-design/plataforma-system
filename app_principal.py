@@ -56,10 +56,35 @@ if not st.session_state.logado:
             else:
                 st.warning("⚠️ Campo obrigatório: Preencha o e-mail e a senha para acessar.")
                 
-    with aba_cadastro:
+                with aba_cadastro:
         st.write("### Formulário de Cadastro")
-        #st.info("Para esta fase de homologação, os novos usuários devem ser cadastrados via convite ou diretamente pelo Administrador no painel do Supabase.")
-
+        
+        # 🟢 ESSES SÃO OS CAMPOS QUE ESTÃO FALTANDO NA SUA TELA:
+        novo_email = st.text_input("Defina seu E-mail de Acesso:", placeholder="seu-email@sistema.com", key="txt_cadastro_email")
+        nova_senha = st.text_input("Defina sua Senha Securitária:", type="password", placeholder="Mínimo 6 caracteres", key="txt_cadastro_senha")
+        confirmar_senha = st.text_input("Confirme sua Senha:", type="password", key="txt_cadastro_confirma")
+        
+        # Botão para disparar o cadastro
+        if st.button("Criar Minha Conta", type="primary", use_container_width=True):
+            if novo_email and nova_senha and confirmar_senha:
+                if nova_senha != confirmar_senha:
+                    st.error("❌ As senhas digitadas não são iguais. Tente novamente.")
+                elif len(nova_senha) < 6:
+                    st.error("❌ Por segurança, a senha deve ter pelo menos 6 caracteres.")
+                else:
+                    with st.spinner("Registrando credenciais na nuvem..."):
+                        try:
+                            # Chama a função que criamos no seu arquivo de cálculos
+                            resultado_cadastro = mod_calculos.realizar_cadastro_supabase(novo_email, nova_senha)
+                            
+                            if resultado_cadastro.get("status") == "sucesso":
+                                st.success("✅ Conta criada com sucesso! Vá para a aba '🔒 Entrar no Sistema' para fazer login.")
+                            else:
+                                st.error(resultado_cadastro.get("mensagem", "Erro ao cadastrar."))
+                        except Exception as erro_interno:
+                            st.error(f"❌ Erro na execução do código: {erro_interno}")
+            else:
+                st.warning("⚠️ Todos os campos são obrigatórios para realizar o cadastro.")
 
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO
@@ -83,7 +108,7 @@ else:
     if opcao_menu == "📈 Painel e Extratos":
         st.title("Painel Financeiro")
         
-                # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
+        # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
         with st.spinner("Sincronizando base histórica com a nuvem..."):
             # CORREÇÃO: Enviamos o st.session_state.usuario_id para o motor!
             df_global = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
@@ -92,9 +117,9 @@ else:
         
         # Painel fixo do topo
         col1, col2, col3 = st.columns(3)
-        col1.metric(label="Saldo Geral Consolidado", value=f"R$ {resumo['saldo']:,.2f}")
-        col2.metric(label="Total de Receitas", value=f"R$ {resumo['receitas']:,.2f}")
-        col3.metric(label="Total de Despesas", value=f"R$ {resumo['despesas']:,.2f}")
+        col1.metric(label="Saldo Geral Consolidado", value=f"R$ {resumo['saldo_total']:,.2f}")
+        col2.metric(label="Total de Receitas", value=f"R$ {resumo['total_receitas']:,.2f}")
+        col3.metric(label="Total de Despesas", value=f"R$ {resumo['total_despesas']:,.2f}")
         
         st.markdown("---")
         st.subheader("Consulte seu Extrato")
@@ -279,7 +304,7 @@ else:
             st.write("Insira os dados abaixo para registrar uma despesa ou receita em tempo real.")
             
             # Buscas dinâmicas do Supabase
-            bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
+            bancos_disponiveis = mod_estruturas.buscar_bancos_reais()
             produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
             
             # 🛡️ BLINDAGEM: Adicionamos a opção neutra no topo para abrir totalmente vazio!
@@ -349,7 +374,7 @@ else:
                 if nova_cat_nome:
                     with st.spinner("Gravando categoria na nuvem..."):
                         # Envia o comando de inserção para o Supabase
-                        resultado_cat = mod_estruturas.cadastrar_nova_categoria_real(nova_cat_nome, st.session_state.usuario_id)
+                        resultado_cat = mod_estruturas.cadastrar_nova_categoria_real(nova_cat_nome)
                     if resultado_cat == "sucesso":
                         st.success(f"🎉 Categoria '{nova_cat_nome}' cadastrada com sucesso!")
                         st.cache_data.clear()
@@ -365,30 +390,31 @@ else:
             st.subheader("📦 Vincular Novo Produto a uma Categoria")
             st.write("Insira o nome do item e selecione a qual grupo de despesa ele pertence.")
             
-                # 🛡️ BUSCA E VINCULAÇÃO RELACIONAL BLINDADA DE CATEGORIAS
+        # 🛡️ BUSCA E VINCULAÇÃO RELACIONAL BLINDADA DE CATEGORIAS
         df_categorias = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
         if not df_categorias.empty:
-            # Monta um dicionário prático: "Nome da Categoria": id_numérico
-            dict_categorias = dict(zip(df_categorias["categoria"].str.upper(), df_categorias["id"]))
-            lista_cat = list(dict_categorias.keys())
+
+        # Monta um dicionário prático: "Nome da Categoria": id_numérico
+        dict_categorias = dict(zip(df_categorias["categoria"].str.upper(), df_categorias["id"]))
+        lista_cat = list(dict_categorias.keys())
             
             cat_selecionada = st.selectbox("Escolha a Categoria para Vincular:", lista_cat)
             id_cat_selecionado = int(dict_categorias[cat_selecionada]) # Garante formato INT bruto
-
             novo_prod = st.text_input("2º Passo: Digite o nome do Produto (ex: uber, energia solar):")
                 
-            if st.button("Confirmar e Gravar Registro", type="primary"):
-                if novo_prod:
-                    with st.spinner("Gravando no Supabase..."):
-                        # O motor retorna True ou False
-                        sucesso_gravacao = mod_calculos.cadastrar_novo_produto_real(novo_prod, id_cat_selecionado, st.session_state.usuario_id)
-                    
-                    if sucesso_gravacao:
-                        st.success(f"🎉 Sucesso! O produto '{novo_prod.lower()}' foi indexado na categoria '{cat_selecionada}' (ID: {id_cat_selecionado}).")
+                if st.button("Confirmar e Gravar Registro", type="primary"):
+                    if novo_prod:
+                        with st.spinner("Gravando no Supabase..."):
+                            resultado = mod_calculos.cadastrar_novo_produto_real(novo_prod, id_cat_selecionado, st.session_state.usuario_id)
+                        
+                        if resultado == "sucesso":
+                            st.success(f"🎉 Sucesso! O produto '{novo_prod.lower()}' foi indexado na categoria '{cat_escolhida_nome}' (ID: {id_cat_selecionado}).")
+                        elif resultado == "duplicado":
+                            st.warning(f"⚠️ Operação Recusada: O produto '{novo_prod.lower()}' já existe no sistema.")
+                        else:
+                            st.error("❌ O banco rejeitou a gravação.")
                     else:
-                        st.error("❌ O banco rejeitou a gravação ou o produto já está duplicado para o seu usuário.")
-                else:
-                    st.warning("⚠️ Campo obrigatório: Digite o nome do produto antes de gravar.")
+                        st.warning("⚠️ Campo obrigatório: Digite o nome do produto antes de gravar.")
 
             # 🛠️ O Painel de Alterações Focado (Estilo UserForm)
             st.markdown("---")
@@ -481,9 +507,10 @@ else:
             st.markdown("---")
             st.write("📋 **Contas Operacionais Ativas na Nuvem:**")
             
-            # Busca a lista atualizada direto do Supabase
-            lista_bancos_reais = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
-            
+            # Buscas dinâmicas do Supabase
+            bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
+            produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
+
             if not lista_bancos_reais:
                 st.info("Nenhum banco cadastrado na tabela física do Supabase.")
             else:
