@@ -71,3 +71,37 @@ def gerar_lancamentos_futuros_parcelados(
         print(f"❌ Erro crítico ao gerar parcelamento futuro: {e}")
         return False
 
+def calcular_comprometimento_mensal_futuro(id_usuario_logado: str) -> pd.DataFrame:
+    """Busca todas as parcelas 'em aberto' e agrupa os totais por mês/ano."""
+    try:
+        supabase = mod_conexao.criar_conexao()
+        
+        # Busca apenas os lançamentos que ainda estão planejados e não foram pagos
+        resposta = supabase.table("orcamento_previsto")\
+            .select("valor_parcela, data_vencimento")\
+            .eq("usuario_id", id_usuario_logado)\
+            .eq("status", "em aberto")\
+            .execute()
+            
+        if not resposta.data:
+            return pd.DataFrame(columns=["Ano_Mes", "Mês/Ano", "Comprometido"])
+            
+        df = pd.DataFrame(resposta.data)
+        
+        # Converte a coluna de data para conseguir extrair o mês e o ano
+        df["data_vencimento"] = pd.to_datetime(df["data_vencimento"])
+        df["valor_parcela"] = pd.to_numeric(df["valor_parcela"])
+        
+        # Cria uma coluna formatada para exibição (Ex: 09/2026) e outra para ordenação
+        df["Ano_Mes"] = df["data_vencimento"].dt.to_period("M")
+        df["Mês/Ano"] = df["data_vencimento"].dt.strftime("%m/%Y")
+        
+        # Agrupa e soma os valores de todas as parcelas daquele mês
+        resumo = df.groupby(["Ano_Mes", "Mês/Ano"])["valor_parcela"].sum().reset_index()
+        resumo.columns = ["Ano_Mes", "Mês/Ano", "Comprometido"]
+        
+        # Ordena cronologicamente para o futuro fazer sentido na tela
+        return resumo.sort_values(by="Ano_Mes")
+    except Exception as e:
+        print(f"❌ Erro ao calcular comprometimento futuro: {e}")
+        return pd.DataFrame(columns=["Ano_Mes", "Mês/Ano", "Comprometido"])
