@@ -624,6 +624,8 @@ else:
             # 1. Busca os dados de Salário e Compromissos
             salario_base = mod_previsoes.buscar_salario_usuario(st.session_state.usuario_id)
             compromissos_detalhes = mod_previsoes.buscar_detalhe_compromissos_abertos(st.session_state.usuario_id)
+            # 🟢 ADICIONE ESTA LINHA DE TESTE AQUI:
+            st.write("Dados brutos vindos do Supabase:", compromissos_detalhes)
             
             if not compromissos_detalhes:
                 st.info("✨ Nenhuma parcela ou despesa futura agendada para os próximos meses!")
