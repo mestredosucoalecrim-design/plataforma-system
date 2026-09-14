@@ -686,10 +686,17 @@ else:
                                 successes = 0 # Ajuste interno
                                 sucessos += 1
                     
-                    if sucessos > 0:
+                        if sucessos > 0:
                         st.success(f"🎉 Sucesso! {sucessos} operação(ões) sincronizada(s) com o banco de dados!")
+                        
+                        # 🟢 LIMPEZA DE CACHE COMPREENSIVA (Zera todas as memórias de busca de extratos e painéis)
                         st.cache_data.clear()
+                        if 'bancos_disponiveis' in st.session_state:
+                            del st.session_state['bancos_disponiveis']
+                        
+                        # Dá o comando de reinicialização visual instantânea
                         st.rerun()
+
                         
                 st.markdown("---")
                 st.subheader("📊 Resumo Consolidado Preditivo")
