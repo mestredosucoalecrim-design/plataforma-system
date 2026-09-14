@@ -168,27 +168,22 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
         return False
 
 def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
-    """Traz a lista detalhada de parcelas em aberto. Se não achar pelo ID, traz geral para teste."""
+    """Busca cirúrgica na tabela orcamento_previsto para diagnosticar o retorno baleado."""
     try:
         supabase = mod_conexao.criar_conexao()
         
-        # 1. Tenta buscar filtrando pelo usuário logado
-        resposta = supabase.table("orcamento_previsto")\
-            .select("*")\
-            .eq("usuario_id", id_usuario_logado)\
-            .eq("status", "em aberto")\
-            .order("data_vencimento", descending=False)\
-            .execute()
+        # Busca direta, sem filtros, para testar a comunicação crua com a tabela
+        resposta = supabase.table("orcamento_previsto").select("*").execute()
+        
+        # Se a resposta contiver dados, retorna a lista
+        if hasattr(resposta, 'data') and resposta.data:
+            return resposta.data
             
-        # 2. Se vier vazio, faz uma busca geral para garantir que apareça na tela de teste
-        if not resposta.data:
-            resposta = supabase.table("orcamento_previsto")\
-                .select("*")\
-                .eq("status", "em aberto")\
-                .order("data_vencimento", descending=False)\
-                .execute()
-                
-        return resposta.data if resposta.data else []
-    except Exception as e:
-        print(f"❌ Erro ao buscar detalhes de compromissos: {e}")
+        # Tratamento alternativo caso o objeto venha em formato de dicionário puro
+        if isinstance(resposta, dict) and "data" in resposta:
+            return resposta["data"]
+            
         return []
+    except Exception as e:
+        # Se o banco rejeitar por qualquer motivo estrutural, o Python vai cuspir o erro aqui
+        return [{"ERRO_CRITICO": str(e)}]
