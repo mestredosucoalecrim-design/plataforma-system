@@ -166,3 +166,19 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
     except Exception as e:
         print(f"❌ Erro ao excluir parcela futura: {e}")
         return False
+
+def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
+    """Traz a lista detalhada de parcelas em aberto para criar os botões na tela."""
+    try:
+        supabase = mod_conexao.criar_conexao()
+        resposta = supabase.table("orcamento_previsto")\
+            .select("*")\
+            .eq("usuario_id", id_usuario_logado)\
+            .eq("status", "em aberto")\
+            .order("data_vencimento", descending=False)\
+            .execute()
+        return resposta.data if resposta.data else []
+    except Exception as e:
+        print(f"Erro ao buscar detalhes: {e}")
+        return []
+
