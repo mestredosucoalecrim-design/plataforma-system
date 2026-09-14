@@ -548,13 +548,19 @@ else:
                                     st.rerun()
                                 else:
                                     st.error("Erro técnico ao tentar deletar o banco.")
-# TELA 4: ORÇAMENTO PREDITIVO (O PARA-BRISA)
+    # =========================================================================
+    # TELA 4: ORÇAMENTO PREDITIVO (O PARA-BRISA)
     # =========================================================================
     elif opcao_menu == "🔮 Orçamento Preditivo":
         st.title("🔮 Orçamento Preditivo & Projeções")
         st.write("Olhe pelo para-brisa: gerencie seu salário e planeje seus compromissos futuros.")
         
-        tab_perfil, tab_novas_previsoes = st.tabs(["👤 Salário & Perfil", "📝 Agendar Gasto Futuro / Parcelado"])
+        # 🟢 Adicionamos a 3ª aba aqui: 'tab_visualizar'
+        tab_perfil, tab_novas_previsoes, tab_visualizar = st.tabs([
+            "👤 Salário & Perfil", 
+            "📝 Agendar Gasto Futuro / Parcelado",
+            "📊 Visualizar Para-brisa (Mês a Mês)"
+        ])
         
         # 1. ABA DO SALÁRIO CONFIGURÁVEL
         with tab_perfil:
@@ -571,14 +577,12 @@ else:
                 else:
                     st.error("❌ Falha ao tentar atualizar a renda base.")
                     
-        # 2. ABA DO PARCELAMENTO AUTOMÁTICO (O GERADOR DE PREVISÕES)
+        # 2. ABA DO PARCELAMENTO AUTOMÁTICO
         with tab_novas_previsoes:
             st.subheader("Agendar Novo Compromisso Parcelado")
-            
             desc_item = st.text_input("Descrição do Item (ex: guarda-roupa, IPVA):", key="txt_prev_desc")
             
-            # Reutiliza o df de categorias criado para a outra tela para manter o padrão
-            df_cat_prev = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
+            df_cat_prev = mod_estruturas.buscar_categories_banco(st.session_state.usuario_id) if 'buscar_categories_banco' in dir(mod_estruturas) else pd.DataFrame()
             if not df_cat_prev.empty:
                 lista_cat_prev = df_cat_prev["categoria"].str.upper().tolist()
                 cat_escolhida = st.selectbox("Selecione o Grupo de Despesa:", lista_cat_prev, key="sb_prev_cat")
@@ -586,7 +590,6 @@ else:
                 cat_escolhida = st.text_input("Digite o Grupo de Despesa (ex: moveis, lazer):", key="txt_prev_cat_manual")
                 
             col_vlr, col_qtd, col_data = st.columns(3)
-            
             with col_vlr:
                 vlr_parc = st.number_input("Valor de CADA Parcela (R$):", min_value=0.01, step=10.00, key="num_prev_vlr")
             with col_qtd:
@@ -596,7 +599,7 @@ else:
                 
             if st.button("Gerar Projeção de Parcelas", type="primary", use_container_width=True, key="btn_gerar_parcelas"):
                 if desc_item and cat_escolhida and vlr_parc > 0:
-                    with st.spinner("Calculando calendário e injetando parcelas no Supabase..."):
+                    with st.spinner("Calculando calendário..."):
                         sucesso = mod_previsoes.gerar_lancamentos_futuros_parcelados(
                             descricao=desc_item,
                             categoria=cat_escolhida,
@@ -605,11 +608,41 @@ else:
                             data_primeiro_vencimento=data_prim,
                             id_usuario_logado=st.session_state.usuario_id
                         )
-                        
                     if sucesso:
-                        st.success(f"🎉 Sucesso Absoluto! Foram geradas {qtd_parc} parcelas de R$ {vlr_parc:,.2f} automaticamente no seu para-brisa!")
-                        st.balloons()
-                    else:
-                        st.error("❌ O banco rejeitou a geração das parcelas futuras.")
+                        st.success(f"🎉 Sucesso! Foram geradas {qtd_parc} parcelas de R$ {vlr_parc:,.2f}!")
+                        st.cache_data.clear()
+                        st.rerun()
                 else:
-                    st.warning("⚠️ Preencha todos os campos obrigatórios para simular o parcelamento.")
+                    st.warning("⚠️ Preencha todos os campos obrigatórios.")
+
+        # 3. 聚️ ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
+        with tab_visualizar:
+            st.subheader("🗓️ Projeção de Saldo Livre Disponível")
+            st.write("Veja quanto do seu salário já está amarrado a prestações nos próximos meses:")
+            
+            salario_base = mod_previsoes.buscar_salario_usuario(st.session_state.usuario_id)
+            df_futuro = mod_previsoes.calcular_comprometimento_mensal_futuro(st.session_state.usuario_id)
+            
+            if df_futuro.empty:
+                st.info("✨ Nenhuma parcela ou despesa futura agendada para os próximos meses!")
+            else:
+                # 🟢 A MÁGICA DA MATEMÁTICA: Calcula o saldo líquido disponível baseado no salário fixo
+                df_futuro["Salário Fixo"] = salario_base
+                df_futuro["Saldo Livre Para Gastar"] = df_futuro["Salário Fixo"] - df_futuro["Comprometido"]
+                
+                # Formata os dados para exibição bonita na tabela (Estilo Excel)
+                df_exibicao = df_futuro.copy()
+                df_exibicao["Comprometido"] = df_exibicao["Comprometido"].map("R$ {:,.2f}".format)
+                df_exibicao["Salário Fixo"] = df_exibicao["Salário Fixo"].map("R$ {:,.2f}".format)
+                df_exibicao["Saldo Livre Para Gastar"] = df_exibicao["Saldo Livre Para Gastar"].map("R$ {:,.2f}".format)
+                
+                # Remove colunas internas de ordenação e exibe o dataframe limpo na tela
+                st.dataframe(
+                    df_exibicao[["Mês/Ano", "Salário Fixo", "Comprometido", "Saldo Livre Para Gastar"]], 
+                    use_container_width=True, 
+                    hide_index=True
+                )
+                
+                # Gera um alerta visual de perigo caso o saldo livre fique negativo no futuro!
+                if (df_futuro["Saldo Livre Para Gastar"] < 0).any():
+                    st.error("⚠️ Atenção: Existem meses futuros onde seus compromissos superam o seu salário! Planeje-se.")
