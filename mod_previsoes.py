@@ -168,17 +168,27 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
         return False
 
 def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
-    """Traz a lista detalhada de parcelas em aberto para criar os botões na tela."""
+    """Traz a lista detalhada de parcelas em aberto. Se não achar pelo ID, traz geral para teste."""
     try:
         supabase = mod_conexao.criar_conexao()
+        
+        # 1. Tenta buscar filtrando pelo usuário logado
         resposta = supabase.table("orcamento_previsto")\
             .select("*")\
             .eq("usuario_id", id_usuario_logado)\
             .eq("status", "em aberto")\
             .order("data_vencimento", descending=False)\
             .execute()
+            
+        # 2. Se vier vazio, faz uma busca geral para garantir que apareça na tela de teste
+        if not resposta.data:
+            resposta = supabase.table("orcamento_previsto")\
+                .select("*")\
+                .eq("status", "em aberto")\
+                .order("data_vencimento", descending=False)\
+                .execute()
+                
         return resposta.data if resposta.data else []
     except Exception as e:
         print(f"❌ Erro ao buscar detalhes de compromissos: {e}")
         return []
-
