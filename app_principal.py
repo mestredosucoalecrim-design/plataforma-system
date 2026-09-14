@@ -3,6 +3,7 @@ import datetime
 import plotly.express as px
 import mod_calculos
 import mod_estruturas
+import pandas as pd
 # 🟢 SUBSTITUA A LINHA 6 POR ESTE BLOCO BLINDADO:
 import os
 import sys
