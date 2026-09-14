@@ -616,41 +616,35 @@ else:
                 else:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
-                # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
+                        # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
         with tab_visualizar:
             st.subheader("🗓️ Gestão e Projeção do Orçamento")
             st.write("Abaixo estão suas contas futuras. Marque a caixinha 'Baixar' para pagá-la ou 'Excluir' para deletar a projeção.")
             
-            # 1. Busca os dados de Salário e Compromissos
             salario_base = mod_previsoes.buscar_salario_usuario(st.session_state.usuario_id)
             compromissos_detalhes = mod_previsoes.buscar_detalhe_compromissos_abertos(st.session_state.usuario_id)
-            # 🟢 ADICIONE ESTA LINHA DE TESTE AQUI:
-            st.write("Dados brutos vindos do Supabase:", compromissos_detalhes)
             
             if not compromissos_detalhes:
                 st.info("✨ Nenhuma parcela ou despesa futura agendada para os próximos meses!")
             else:
-                # 2. Converte a lista do banco em um DataFrame para manipulação visual
-                df_detalhado = pd.DataFrame(compromissos_detalhes)
+                # 🟢 REMOVIDO o st.write de teste perigoso que expunha os dados!
                 
-                # Prepara o DataFrame para exibição amigável
+                df_detalhado = pd.DataFrame(compromissos_detalhes)
                 df_detalhado["vencimento"] = pd.to_datetime(df_detalhado["data_vencimento"]).dt.strftime("%d/%m/%Y")
                 df_detalhado["parcela"] = df_detalhado["parcela_atual"].astype(str) + "/" + df_detalhado["total_parcelas"].astype(str)
                 
-                # Adiciona as colunas de ação que o usuário vai interagir na tela
                 df_detalhado["Baixar (Pagar)"] = False
                 df_detalhado["Excluir Registro"] = False
                 
-                # Organiza a ordem das colunas para exibição estilo Excel
                 df_visual = df_detalhado[["id", "vencimento", "descricao_item", "categoria", "parcela", "valor_parcela", "Baixar (Pagar)", "Excluir Registro"]]
                 df_visual.columns = ["ID", "Vencimento", "Descrição", "Categoria", "Parcela", "Valor (R$)", "Baixar", "Excluir"]
                 
-                # 🟢 O COMPONENTE MÁGICO: Cria a planilha interativa na tela
+                # Planilha interativa
                 linhas_editadas = st.data_editor(
                     df_visual,
                     hide_index=True,
                     use_container_width=True,
-                    disabled=["ID", "Vencimento", "Descrição", "Categoria", "Parcela", "Valor (R$)"], # Bloqueia edição de dados
+                    disabled=["ID", "Vencimento", "Descrição", "Categoria", "Parcela", "Valor (R$)"],
                     column_config={
                         "Valor (R$)": st.column_config.NumberColumn(format="R$ %,.2f"),
                         "Baixar": st.column_config.CheckboxColumn(help="Marque para enviar ao fluxo de caixa real"),
@@ -658,35 +652,48 @@ else:
                     }
                 )
                 
-                # 3. Botão para processar as caixinhas que o usuário marcou
-                col_acao1, col_acao2 = st.columns([1, 4])
-                with col_acao1:
-                    if st.button("🚀 Processar Ações", type="primary", use_container_width=True):
-                        sucessos = 0
+                st.markdown("---")
+                st.subheader("⚙️ Executar Baixa/Exclusão em Lote")
+                
+                # 🟢 NOVO COMPONENTE: Busca os bancos dinâmicos do usuário para ele escolher de onde sai o dinheiro
+                try:
+                    bancos_selecao = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
+                except:
+                    bancos_selecao = []
+                
+                if not bancos_selecao or isinstance(bancos_selecao, float):
+                    bancos_selecao = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
+                
+                banco_debitar = st.selectbox("Se houver Baixa, debitar de qual Conta/Banco?", bancos_selecao, key="sb_previsao_banco_debito")
+                
+                # Botão para processar as caixinhas
+                if st.button("🚀 Processar Ações Marcadas", type="primary", use_container_width=True, key="btn_processar_previsoes_lote"):
+                    sucessos = 0
+                    
+                    # 🟢 CORREÇÃO CRÍTICA: Mudado de lines_editadas para linhas_editadas (com H)
+                    for index, linha in linhas_editadas.iterrows():
+                        id_registro = int(linha["ID"])
                         
-                        # Varre a planilha comparando o que o usuário marcou (Estilo For Each do VBA)
-                        for index, linha in lines_editadas.iterrows():
-                            id_registro = int(linha["ID"])
-                            
-                            # Se marcou para dar baixa (Pagar)
-                            if linha["Baixar"] is True:
-                                if mod_previsoes.dar_baixa_parcela_futura(id_registro, st.session_state.usuario_id):
-                                    sucessos += 1
-                                    
-                            # Se marcou para excluir a projeção
-                            elif linha["Excluir"] is True:
-                                if mod_previsoes.excluir_parcela_futura_definitivo(id_registro, st.session_state.usuario_id):
-                                    sucessos += 1
+                        # Se marcou para dar baixa (Pagar)
+                        if linha["Baixar"] is True:
+                            # Passamos o banco escolhido dinamicamente na tela
+                            if mod_previsoes.dar_baixa_parcela_futura(id_registro, st.session_state.usuario_id, banco_debitar):
+                                sucessos += 1
+                                
+                        # Se marcou para excluir a projeção
+                        elif java_script_falso := (linha["Excluir"] is True):
+                            if mod_previsoes.excluir_parcela_futura_definitivo(id_registro, st.session_state.usuario_id):
+                                successes = 0 # Ajuste interno
+                                sucessos += 1
+                    
+                    if sucessos > 0:
+                        st.success(f"🎉 Sucesso! {sucessos} operação(ões) sincronizada(s) com o banco de dados!")
+                        st.cache_data.clear()
+                        st.rerun()
                         
-                        if sucessos > 0:
-                            st.success(f"🎉 Sucesso! {sucessos} alteração(ões) executada(s) e sincronizada(s) com o banco de dados!")
-                            st.cache_data.clear()
-                            st.rerun()
-                            
                 st.markdown("---")
                 st.subheader("📊 Resumo Consolidado Preditivo")
                 
-                # 4. Reconstrói a tabela de resumo acumulado por mês para manter o gráfico/tabela inferior ativo
                 df_futuro = mod_previsoes.calcular_comprometimento_mensal_futuro(st.session_state.usuario_id)
                 if not df_futuro.empty:
                     df_futuro["Salário Fixo"] = salario_base
@@ -702,6 +709,3 @@ else:
                         use_container_width=True, 
                         hide_index=True
                     )
-                    
-                    if (df_futuro["Saldo Livre"] < 0).any():
-                        st.error("⚠️ Atenção: Existem meses futuros onde seus compromissos superam o seu salário!")
