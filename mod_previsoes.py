@@ -106,52 +106,35 @@ def calcular_comprometimento_mensal_futuro(id_usuario_logado: str) -> pd.DataFra
         print(f"❌ Erro ao calcular comprometimento futuro: {e}")
         return pd.DataFrame(columns=["Ano_Mes", "Mês/Ano", "Comprometido"])
 
-def dar_baixa_parcela_futura(id_parcela: int, id_usuario_logado: str) -> bool:
-    """
-    Remove a parcela do orçamento previsto e insere automaticamente
-    como um lançamento real na tabela public.lancamentos.
-    """
+def dar_baixa_parcela_futura(id_parcela: int, id_usuario_logado: str, banco_escolhido: str) -> bool:
+    """Remove a parcela do orçamento previsto e insere com o banco correto no passado."""
     try:
         supabase = mod_conexao.criar_conexao()
         
-        # 1. Busca os dados da parcela que vai sofrer a baixa
-        resposta = supabase.table("orcamento_previsto")\
-            .select("*")\
-            .eq("id", id_parcela)\
-            .eq("usuario_id", id_usuario_logado)\
-            .execute()
-            
+        resposta = supabase.table("orcamento_previsto").select("*").eq("id", id_parcela).eq("usuario_id", id_usuario_logado).execute()
         if not resposta.data:
             return False
             
-        parcela = resposta.data[0]
-        
-        # 2. Prepara o esqueleto do lançamento real para o passado
-        # Formatamos a descrição para indicar o controle da parcela (ex: guarda-roupa (parc 1/10))
+        parcela = resposta.data[0] # Garante a captura da primeira linha do dicionário
         descricao_final = f"{parcela['descricao_item']} (parc {parcela['parcela_atual']}/{parcela['total_parcelas']})"
-        
-        # Como é uma despesa simulada no orçamento, injetamos como valor negativo
         valor_final = -abs(float(parcela["valor_parcela"]))
         
         dados_lancamento = {
             "created_at": f"{parcela['data_vencimento']}T00:00:00+00:00",
-            "banco": "nu bank", # Define um banco padrão para a baixa, o usuário pode alterar no extrato depois
+            "banco": banco_escolhido.strip().lower(), # 🟢 Grava o banco real que o usuário escolheu na tela!
             "categoria": parcela["categoria"].strip().lower(),
             "nome_produto": parcela["descricao_item"].strip().lower(),
             "valor": valor_final,
             "usuario_id": id_usuario_logado
         }
         
-        # 3. Dispara a gravação no passado (public.lancamentos)
         supabase.table("lancamentos").insert(dados_lancamento).execute()
-        
-        # 4. Deleta a parcela do futuro (public.orcamento_previsto) para ela sumir do para-brisa
         supabase.table("orcamento_previsto").delete().eq("id", id_parcela).execute()
-        
         return True
     except Exception as e:
-        print(f"❌ Erro crítico ao dar baixa na parcela: {e}")
+        print(f"❌ Erro ao dar baixa: {e}")
         return False
+
 
 def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -> bool:
     """Deleta permanentemente uma projeção do para-brisa sem gerar lançamento real."""
