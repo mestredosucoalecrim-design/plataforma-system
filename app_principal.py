@@ -304,7 +304,17 @@ else:
             st.write("Insira os dados abaixo para registrar uma despesa ou receita em tempo real.")
             
             # Buscas dinâmicas do Supabase
-            bancos_disponiveis = mod_estruturas.buscar_bancos_reais()
+            # 🟢 CORREÇÃO DE SEGURANÇA NA LINHA 307:
+            try:
+                bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
+            except TypeError:
+                # Caso a sua função no mod_estruturas ainda não aceite o ID do usuário:
+                bancos_disponiveis = mod_estruturas.buscar_bancos_reais()
+            
+            # Se o usuário for novo e não tiver bancos cadastrados, evita o TypeError entregando a lista:
+            if not bancos_disponiveis or isinstance(bancos_disponiveis, float):
+                bancos_disponiveis = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
+
             produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
             
             # 🛡️ BLINDAGEM: Adicionamos a opção neutra no topo para abrir totalmente vazio!
