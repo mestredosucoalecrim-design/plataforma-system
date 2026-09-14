@@ -179,6 +179,6 @@ def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
             .execute()
         return resposta.data if resposta.data else []
     except Exception as e:
-        print(f"Erro ao buscar detalhes: {e}")
+        print(f"❌ Erro ao buscar detalhes de compromissos: {e}")
         return []
 
