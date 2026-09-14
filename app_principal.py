@@ -508,3 +508,68 @@ else:
                                     st.rerun()
                                 else:
                                     st.error("Erro técnico ao tentar deletar o banco.")
+# TELA 4: ORÇAMENTO PREDITIVO (O PARA-BRISA)
+    # =========================================================================
+    elif opcao_menu == "🔮 Orçamento Preditivo":
+        st.title("🔮 Orçamento Preditivo & Projeções")
+        st.write("Olhe pelo para-brisa: gerencie seu salário e planeje seus compromissos futuros.")
+        
+        tab_perfil, tab_novas_previsoes = st.tabs(["👤 Salário & Perfil", "📝 Agendar Gasto Futuro / Parcelado"])
+        
+        # 1. ABA DO SALÁRIO CONFIGURÁVEL
+        with tab_perfil:
+            st.subheader("Configuração de Renda Fixa")
+            salario_atual = mod_previsoes.buscar_salario_usuario(st.session_state.usuario_id)
+            
+            st.write(f"💵 Seu salário base cadastrado atualmente é: **R$ {salario_atual:,.2f}**")
+            novo_salario_input = st.number_input("Alterar Salário Base (R$):", min_value=0.00, value=salario_atual, step=100.00, key="num_novo_salario")
+            
+            if st.button("Salvar Nova Renda", type="primary", key="btn_salvar_salario"):
+                if mod_previsoes.gerenciar_salario_usuario(st.session_state.usuario_id, novo_salario_input):
+                    st.success("🎉 Renda base atualizada com sucesso no banco de dados!")
+                    st.rerun()
+                else:
+                    st.error("❌ Falha ao tentar atualizar a renda base.")
+                    
+        # 2. ABA DO PARCELAMENTO AUTOMÁTICO (O GERADOR DE PREVISÕES)
+        with tab_novas_previsoes:
+            st.subheader("Agendar Novo Compromisso Parcelado")
+            
+            desc_item = st.text_input("Descrição do Item (ex: guarda-roupa, IPVA):", key="txt_prev_desc")
+            
+            # Reutiliza o df de categorias criado para a outra tela para manter o padrão
+            df_cat_prev = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
+            if not df_cat_prev.empty:
+                lista_cat_prev = df_cat_prev["categoria"].str.upper().tolist()
+                cat_escolhida = st.selectbox("Selecione o Grupo de Despesa:", lista_cat_prev, key="sb_prev_cat")
+            else:
+                cat_escolhida = st.text_input("Digite o Grupo de Despesa (ex: moveis, lazer):", key="txt_prev_cat_manual")
+                
+            col_vlr, col_qtd, col_data = st.columns(3)
+            
+            with col_vlr:
+                vlr_parc = st.number_input("Valor de CADA Parcela (R$):", min_value=0.01, step=10.00, key="num_prev_vlr")
+            with col_qtd:
+                qtd_parc = st.number_input("Quantidade Total de Parcelas:", min_value=1, max_value=120, value=1, step=1, key="num_prev_qtd")
+            with col_data:
+                data_prim = st.date_input("Data do 1º Vencimento:", key="date_prev_vcto")
+                
+            if st.button("Gerar Projeção de Parcelas", type="primary", use_container_width=True, key="btn_gerar_parcelas"):
+                if desc_item and cat_escolhida and vlr_parc > 0:
+                    with st.spinner("Calculando calendário e injetando parcelas no Supabase..."):
+                        sucesso = mod_previsoes.gerar_lancamentos_futuros_parcelados(
+                            descricao=desc_item,
+                            categoria=cat_escolhida,
+                            valor_parcela=vlr_parc,
+                            total_parcelas=int(qtd_parc),
+                            data_primeiro_vencimento=data_prim,
+                            id_usuario_logado=st.session_state.usuario_id
+                        )
+                        
+                    if sucesso:
+                        st.success(f"🎉 Sucesso Absoluto! Foram geradas {qtd_parc} parcelas de R$ {vlr_parc:,.2f} automaticamente no seu para-brisa!")
+                        st.balloons()
+                    else:
+                        st.error("❌ O banco rejeitou a geração das parcelas futuras.")
+                else:
+                    st.warning("⚠️ Preencha todos os campos obrigatórios para simular o parcelamento.")
