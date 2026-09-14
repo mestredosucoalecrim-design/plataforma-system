@@ -107,33 +107,39 @@ def calcular_comprometimento_mensal_futuro(id_usuario_logado: str) -> pd.DataFra
         return pd.DataFrame(columns=["Ano_Mes", "Mês/Ano", "Comprometido"])
 
 def dar_baixa_parcela_futura(id_parcela: int, id_usuario_logado: str, banco_escolhido: str) -> bool:
-    """Remove a parcela do orçamento previsto e insere com o banco correto no passado."""
+    """Remove a parcela do orçamento previsto e insere com a data de HOJE no passado."""
     try:
         supabase = mod_conexao.criar_conexao()
         
+        # 1. Busca os dados da parcela para saber valor, categoria e descrição
         resposta = supabase.table("orcamento_previsto").select("*").eq("id", id_parcela).eq("usuario_id", id_usuario_logado).execute()
         if not resposta.data:
             return False
             
-        parcela = resposta.data[0] # Garante a captura da primeira linha do dicionário
+        parcela = resposta.data[0] # Captura a primeira linha retornada
         descricao_final = f"{parcela['descricao_item']} (parc {parcela['parcela_atual']}/{parcela['total_parcelas']})"
         valor_final = -abs(float(parcela["valor_parcela"]))
         
+        # 🟢 A MÁGICA DO CAIXA REAL: Captura a data exata de HOJE (dia do pagamento)
+        data_hoje_formatada = datetime.now().strftime("%Y-%m-%d")
+        
         dados_lancamento = {
-            "created_at": f"{parcela['data_vencimento']}T00:00:00+00:00",
-            "banco": banco_escolhido.strip().lower(), # 🟢 Grava o banco real que o usuário escolheu na tela!
+            "created_at": f"{data_hoje_formatada}T00:00:00+00:00", # Carimba com o dia atual do clique
+            "banco": banco_escolhido.strip().lower(),
             "categoria": parcela["categoria"].strip().lower(),
-            "nome_produto": parcela["descricao_item"].strip().lower(),
+            "nome_produto": descricao_final.strip().lower(), # Salva a descrição detalhada com a parcela
             "valor": valor_final,
             "usuario_id": id_usuario_logado
         }
         
+        # 2. Grava no passado e deleta do futuro simulado
         supabase.table("lancamentos").insert(dados_lancamento).execute()
         supabase.table("orcamento_previsto").delete().eq("id", id_parcela).execute()
         return True
     except Exception as e:
         print(f"❌ Erro ao dar baixa: {e}")
         return False
+
 
 
 def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -> bool:
