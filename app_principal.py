@@ -3,7 +3,36 @@ import datetime
 import plotly.express as px
 import mod_calculos
 import mod_estruturas
-import mod_previsoes
+# 🟢 SUBSTITUA A LINHA 6 POR ESTE BLOCO BLINDADO:
+import os
+import sys
+
+# Força o Python a olhar a pasta atual do projeto
+diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+if diretorio_atual not in sys.path:
+    sys.path.append(diretorio_atual)
+
+try:
+    import mod_previsoes
+except ModuleNotFoundError:
+    # Se der erro, o Python varre a pasta e tenta achar variações de nome (ex: Maiúsculas)
+    arquivos_pasta = os.listdir(diretorio_atual)
+    arquivo_encontrado = None
+    for f in arquivos_pasta:
+        if f.lower() == "mod_previsoes.py":
+            arquivo_encontrado = f.replace(".py", "")
+            break
+            
+    if arquivo_encontrado:
+        # Importa dinamicamente se o nome estiver com letras maiúsculas no GitHub
+        import importlib
+        mod_previsoes = importlib.import_module(arquivo_encontrado)
+    else:
+        # Se realmente não existir, mostra a lista real de arquivos na tela do log
+        print(f"❌ Arquivos reais na pasta do Streamlit: {arquivos_pasta}")
+        st.error(f"❌ O arquivo 'mod_previsoes.py' não foi achado nesta pasta. Arquivos disponíveis: {arquivos_pasta}")
+        st.stop()
+
 
 # 1. Configuração de Layout da Página
 st.set_page_config(
