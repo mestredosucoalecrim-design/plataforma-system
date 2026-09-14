@@ -3,6 +3,7 @@ import datetime
 import plotly.express as px
 import mod_calculos
 import mod_estruturas
+import mod_previsoes
 
 # 1. Configuração de Layout da Página
 st.set_page_config(
