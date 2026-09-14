@@ -96,7 +96,7 @@ else:
     
     opcao_menu = st.sidebar.radio(
         "Selecione uma Tela:",
-        ["📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos"],
+        ["📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
         key="menu_principal"
     )
     
