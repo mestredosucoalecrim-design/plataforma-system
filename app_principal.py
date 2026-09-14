@@ -616,34 +616,90 @@ else:
                 else:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
-        # 3. 聚️ ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
+                # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
         with tab_visualizar:
-            st.subheader("🗓️ Projeção de Saldo Livre Disponível")
-            st.write("Veja quanto do seu salário já está amarrado a prestações nos próximos meses:")
+            st.subheader("🗓️ Gestão e Projeção do Orçamento")
+            st.write("Abaixo estão suas contas futuras. Marque a caixinha 'Baixar' para pagá-la ou 'Excluir' para deletar a projeção.")
             
+            # 1. Busca os dados de Salário e Compromissos
             salario_base = mod_previsoes.buscar_salario_usuario(st.session_state.usuario_id)
-            df_futuro = mod_previsoes.calcular_comprometimento_mensal_futuro(st.session_state.usuario_id)
+            compromissos_detalhes = mod_previsoes.buscar_detalhe_compromissos_abertos(st.session_state.usuario_id)
             
-            if df_futuro.empty:
+            if not compromissos_detalhes:
                 st.info("✨ Nenhuma parcela ou despesa futura agendada para os próximos meses!")
             else:
-                # 🟢 A MÁGICA DA MATEMÁTICA: Calcula o saldo líquido disponível baseado no salário fixo
-                df_futuro["Salário Fixo"] = salario_base
-                df_futuro["Saldo Livre Para Gastar"] = df_futuro["Salário Fixo"] - df_futuro["Comprometido"]
+                # 2. Converte a lista do banco em um DataFrame para manipulação visual
+                df_detalhado = pd.DataFrame(compromissos_detalhes)
                 
-                # Formata os dados para exibição bonita na tabela (Estilo Excel)
-                df_exibicao = df_futuro.copy()
-                df_exibicao["Comprometido"] = df_exibicao["Comprometido"].map("R$ {:,.2f}".format)
-                df_exibicao["Salário Fixo"] = df_exibicao["Salário Fixo"].map("R$ {:,.2f}".format)
-                df_exibicao["Saldo Livre Para Gastar"] = df_exibicao["Saldo Livre Para Gastar"].map("R$ {:,.2f}".format)
+                # Prepara o DataFrame para exibição amigável
+                df_detalhado["vencimento"] = pd.to_datetime(df_detalhado["data_vencimento"]).dt.strftime("%d/%m/%Y")
+                df_detalhado["parcela"] = df_detalhado["parcela_atual"].astype(str) + "/" + df_detalhado["total_parcelas"].astype(str)
                 
-                # Remove colunas internas de ordenação e exibe o dataframe limpo na tela
-                st.dataframe(
-                    df_exibicao[["Mês/Ano", "Salário Fixo", "Comprometido", "Saldo Livre Para Gastar"]], 
-                    use_container_width=True, 
-                    hide_index=True
+                # Adiciona as colunas de ação que o usuário vai interagir na tela
+                df_detalhado["Baixar (Pagar)"] = False
+                df_detalhado["Excluir Registro"] = False
+                
+                # Organiza a ordem das colunas para exibição estilo Excel
+                df_visual = df_detalhado[["id", "vencimento", "descricao_item", "categoria", "parcela", "valor_parcela", "Baixar (Pagar)", "Excluir Registro"]]
+                df_visual.columns = ["ID", "Vencimento", "Descrição", "Categoria", "Parcela", "Valor (R$)", "Baixar", "Excluir"]
+                
+                # 🟢 O COMPONENTE MÁGICO: Cria a planilha interativa na tela
+                linhas_editadas = st.data_editor(
+                    df_visual,
+                    hide_index=True,
+                    use_container_width=True,
+                    disabled=["ID", "Vencimento", "Descrição", "Categoria", "Parcela", "Valor (R$)"], # Bloqueia edição de dados
+                    column_config={
+                        "Valor (R$)": st.column_config.NumberColumn(format="R$ %,.2f"),
+                        "Baixar": st.column_config.CheckboxColumn(help="Marque para enviar ao fluxo de caixa real"),
+                        "Excluir": st.column_config.CheckboxColumn(help="Marque para deletar permanentemente do para-brisa")
+                    }
                 )
                 
-                # Gera um alerta visual de perigo caso o saldo livre fique negativo no futuro!
-                if (df_futuro["Saldo Livre Para Gastar"] < 0).any():
-                    st.error("⚠️ Atenção: Existem meses futuros onde seus compromissos superam o seu salário! Planeje-se.")
+                # 3. Botão para processar as caixinhas que o usuário marcou
+                col_acao1, col_acao2 = st.columns([1, 4])
+                with col_acao1:
+                    if st.button("🚀 Processar Ações", type="primary", use_container_width=True):
+                        sucessos = 0
+                        
+                        # Varre a planilha comparando o que o usuário marcou (Estilo For Each do VBA)
+                        for index, linha in lines_editadas.iterrows():
+                            id_registro = int(linha["ID"])
+                            
+                            # Se marcou para dar baixa (Pagar)
+                            if linha["Baixar"] is True:
+                                if mod_previsoes.dar_baixa_parcela_futura(id_registro, st.session_state.usuario_id):
+                                    sucessos += 1
+                                    
+                            # Se marcou para excluir a projeção
+                            elif linha["Excluir"] is True:
+                                if mod_previsoes.excluir_parcela_futura_definitivo(id_registro, st.session_state.usuario_id):
+                                    sucessos += 1
+                        
+                        if sucessos > 0:
+                            st.success(f"🎉 Sucesso! {sucessos} alteração(ões) executada(s) e sincronizada(s) com o banco de dados!")
+                            st.cache_data.clear()
+                            st.rerun()
+                            
+                st.markdown("---")
+                st.subheader("📊 Resumo Consolidado Preditivo")
+                
+                # 4. Reconstrói a tabela de resumo acumulado por mês para manter o gráfico/tabela inferior ativo
+                df_futuro = mod_previsoes.calcular_comprometimento_mensal_futuro(st.session_state.usuario_id)
+                if not df_futuro.empty:
+                    df_futuro["Salário Fixo"] = salario_base
+                    df_futuro["Saldo Livre"] = df_futuro["Salário Fixo"] - df_futuro["Comprometido"]
+                    
+                    df_exibicao = df_futuro.copy()
+                    df_exibicao["Comprometido"] = df_exibicao["Comprometido"].map("R$ {:,.2f}".format)
+                    df_exibicao["Salário Fixo"] = df_exibicao["Salário Fixo"].map("R$ {:,.2f}".format)
+                    df_exibicao["Saldo Livre"] = df_exibicao["Saldo Livre"].map("R$ {:,.2f}".format)
+                    
+                    st.dataframe(
+                        df_exibicao[["Mês/Ano", "Salário Fixo", "Comprometido", "Saldo Livre"]], 
+                        use_container_width=True, 
+                        hide_index=True
+                    )
+                    
+                    if (df_futuro["Saldo Livre"] < 0).any():
+                        st.error("⚠️ Atenção: Existem meses futuros onde seus compromissos superam o seu salário!")
