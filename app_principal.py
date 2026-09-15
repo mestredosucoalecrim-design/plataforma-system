@@ -271,13 +271,14 @@ else:
 
             if df_extrato.empty:
                 st.warning(f"⚠️ Nenhum lançamento efetuado no banco '{banco_selecionado.upper()}' neste período.")
-            else:
+                        else:
                 df_editor = df_extrato[['id', 'created_at', 'banco', 'categoria', 'nome_produto', 'valor']].copy()
                 
-                # 🟢 CORREÇÃO CRÍTICA: Força a coluna a ser do tipo Data do Python (evita o StreamlitAPIException)
+                # Força a coluna a ser do tipo Data para o calendário funcionar
                 df_editor['created_at'] = pd.to_datetime(df_editor['created_at']).dt.date
                 df_editor['Selecionar para Exclusão'] = False
                 
+                # 1. MONTAGEM DA PLANILHA INTERATIVA (Lugar correto das configurações visuais)
                 tabela_viva = st.data_editor(
                     df_editor,
                     width='stretch',
@@ -286,17 +287,7 @@ else:
                     key="extrato_vico_system",
                     column_config={
                         "id": None, 
-                        # 🟢 TRATAMENTO DE DATA UNIVERSAL (Evita NameError de tipos):
-                        if "created_at" in campos_alterados:
-                            dt_alvo = campos_alterados["created_at"]
-                            
-                            # Se o calendário gerar o formato padrão, extraímos os 10 primeiros caracteres (AAAA-MM-DD)
-                            data_curta = str(dt_alvo)[:10].strip()
-                                
-                            # Monta o padrão timestamptz que o Supabase exige
-                            campos_alterados["created_at"] = f"{data_curta}T00:00:00+00:00"
-
-                        ),
+                        "created_at": st.column_config.DateColumn("Data do Lançamento", format="DD/MM/YYYY"),
                         "banco": st.column_config.TextColumn("Banco/Conta"), 
                         "categoria": st.column_config.TextColumn("Categoria (Automática)"),
                         "nome_produto": st.column_config.TextColumn("Produto/Item"),
@@ -304,12 +295,10 @@ else:
                         "Selecionar para Exclusão": st.column_config.CheckboxColumn("🗑️ Deletar?", default=False)
                     }
                 )
-
-
                 
-            # Exclusão por botão
-            linhas_para_deletar = tabela_viva[tabela_viva['Selecionar para Exclusão'] == True]
-            if not linhas_para_deletar.empty:
+                # 2. FLUXO DE EXCLUSÃO POR BOTÃO
+                linhas_para_deletar = tabela_viva[tabela_viva['Selecionar para Exclusão'] == True]
+                if not linhas_para_deletar.empty:
                     st.write("")
                     if st.button("🗑️ Excluir Registros Selecionados", type="secondary"):
                         sucesso_del = True
@@ -321,9 +310,9 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-            # Edição instantânea (Versão inteligente com ajuste automático de data)
-            mudancas = st.session_state.get("extrato_vico_system")
-            if mudancas and mudancas.get("edited_rows"):
+                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Lugar correto para processar as lógicas e o IF da data)
+                mudancas = st.session_state.get("extrato_vico_system")
+                if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
                     houve_edicao = False
                     for idx_linha, campos_alterados in mudancas["edited_rows"].items():
@@ -332,29 +321,22 @@ else:
                         houve_edicao = True
                         id_real = int(df_editor.iloc[idx_linha]['id'])
                         
-                        # 🟢 TRATAMENTO DE VALOR: Mantém a conversão para float
+                        # Se o usuário alterou o valor, converte para float
                         if "valor" in campos_alterados:
                             campos_alterados["valor"] = float(campos_alterados["valor"])
                             
-                        # 🟢 TRATAMENTO DE DATA ROBUSTO: Aceita tanto texto quanto o objeto de data do calendário
+                        # 🟢 O SEU IF DA DATA FICA EXATAMENTE AQUI: Dentro do processamento de mudanças
                         if "created_at" in campos_alterados:
-                            from datetime import date
                             dt_alvo = campos_alterados["created_at"]
-                            
-                            if isinstance(dt_alvo, (date, datetime)):
-                                data_curta = dt_alvo.strftime("%Y-%m-%d")
-                            else:
-                                data_curta = str(dt_alvo).strip()
-                                
+                            data_curta = str(dt_alvo)[:10].strip()
                             campos_alterados["created_at"] = f"{data_curta}T00:00:00+00:00"
-
                             
                         if not mod_calculos.atualizar_lancamento_banco(id_real, campos_alterados):
                             sucesso_global = False
                             
-                    if houve_edicao and sucesso_global:
-                        st.toast("⚡ Banco atualizado!", icon="💾")
-                        st.cache_data.clear() # Limpa a memória para os saldos e gráficos atualizarem na hora
+                    if houve_edicao andHex sucesso_global:
+                        st.toast("⚡ Banco updated!", icon="💾")
+                        st.cache_data.clear()
                         st.rerun()
 
     # --- TELA 2: NOVO LANÇAMENTO ---
