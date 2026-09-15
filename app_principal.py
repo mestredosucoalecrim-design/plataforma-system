@@ -189,7 +189,7 @@ else:
                         )
                         figura_categoria.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
                         figura_categoria.update_yaxes(categoryorder='total ascending')
-                        st.plotly_chart(figura_grafico, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(figura_categoria, use_container_width=True, config={'displayModeBar': False})
                     except Exception as e:
                         st.error(f"Erro G1: {e}")
 
@@ -209,7 +209,7 @@ else:
                             color_discrete_map={'Receitas': '#2ECC71', 'Despesas': '#E74C3C'}
                         )
                         figura_barras.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
-                        st.plotly_chart(figura_grafico, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(figura_barras, use_container_width=True, config={'displayModeBar': False})
                     except Exception as e:
                         st.error(f"Erro G2: {e}")
 
@@ -231,7 +231,7 @@ else:
                          )
                         figura_produtos.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
                         figura_produtos.update_yaxes(categoryorder='total ascending')
-                        st.plotly_chart(figura_grafico, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(figura_produtos, use_container_width=True, config={'displayModeBar': False})
                     except Exception as e:
                         st.error(f"Erro G3: {e}")
 
