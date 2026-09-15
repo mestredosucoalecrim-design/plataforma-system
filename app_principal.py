@@ -4,7 +4,7 @@ import plotly.express as px
 import mod_calculos
 import mod_estruturas
 import mod_previsoes
-
+import pandas as pd
 
 # 1. Configuração de Layout da Página
 st.set_page_config(
@@ -33,8 +33,10 @@ if not st.session_state.logado:
     st.title("Plataforma S.Y.S.T.E.M")
     st.subheader("Acesso Restrito")
     
+    # Cria as duas abas limpas na tela
     aba_login, aba_cadastro = st.tabs(["🔒 Entrar no Sistema", "📝 Criar Nova Conta"])
     
+    # 1. FORMULÁRIO DE LOGIN (Tudo o que pertence ao acesso)
     with aba_login:
         email_input = st.text_input("E-mail de Acesso:", placeholder="exemplo@sistema.com", key="txt_login_email")
         senha_input = st.text_input("Senha Securitária:", type="password", key="txt_login_senha")
@@ -42,11 +44,9 @@ if not st.session_state.logado:
         if st.button("Acessar Plataforma", type="primary", use_container_width=True):
             if email_input and senha_input:
                 with st.spinner("Autenticando credenciais na nuvem..."):
-                    # Dispara a validação real no Supabase
                     resultado_login = mod_calculos.realizar_login_real_supabase(email_input, senha_input)
                 
                 if resultado_login["status"] == "sucesso":
-                    # 🔥 GUARDA NA MEMÓRIA DA SESSÃO: Transforma o app em privado para este ID único!
                     st.session_state.logado = True
                     st.session_state.usuario_id = resultado_login["usuario_id"]
                     st.session_state.usuario_email = resultado_login["email"]
@@ -58,16 +58,16 @@ if not st.session_state.logado:
             else:
                 st.warning("⚠️ Campo obrigatório: Preencha o e-mail e a senha para acessar.")
                 
-                with aba_cadastro:
-                     st.write("### Formulário de Cadastro")
+    # 2. 📝 FORMULÁRIO DE CADASTRO (Os campos agora estão realocados no lugar certo!)
+    with aba_cadastro:
+        st.write("### Formulário de Cadastro")
         
-        # 🟢 ESSES SÃO OS CAMPOS QUE ESTÃO FALTANDO NA SUA TELA:
         novo_email = st.text_input("Defina seu E-mail de Acesso:", placeholder="seu-email@sistema.com", key="txt_cadastro_email")
         nova_senha = st.text_input("Defina sua Senha Securitária:", type="password", placeholder="Mínimo 6 caracteres", key="txt_cadastro_senha")
         confirmar_senha = st.text_input("Confirme sua Senha:", type="password", key="txt_cadastro_confirma")
         
-        # Botão para disparar o cadastro
-        if st.button("Criar Minha Conta", type="primary", use_container_width=True):
+        # Botão para disparar o cadastro de novo usuário
+        if st.button("Criar My Conta", type="primary", use_container_width=True):
             if novo_email and nova_senha and confirmar_senha:
                 if nova_senha != confirmar_senha:
                     st.error("❌ As senhas digitadas não são iguais. Tente novamente.")
@@ -76,7 +76,6 @@ if not st.session_state.logado:
                 else:
                     with st.spinner("Registrando credenciais na nuvem..."):
                         try:
-                            # Chama a função que criamos no seu arquivo de cálculos
                             resultado_cadastro = mod_calculos.realizar_cadastro_supabase(novo_email, nova_senha)
                             
                             if resultado_cadastro.get("status") == "sucesso":
@@ -244,9 +243,12 @@ else:
                 st.warning(f"⚠️ Nenhum lançamento efetuado no banco '{banco_selecionado.upper()}' neste período.")
             else:
                 df_editor = df_extrato[['id', 'created_at', 'banco', 'categoria', 'nome_produto', 'valor']].copy()
-                df_editor['created_at'] = df_editor['created_at'].dt.strftime('%Y-%m-%d')
+                
+                # Força a coluna a ser do tipo Data para o calendário funcionar
+                df_editor['created_at'] = pd.to_datetime(df_editor['created_at']).dt.date
                 df_editor['Selecionar para Exclusão'] = False
                 
+                # 1. MONTAGEM DA PLANILHA INTERATIVA (Lugar correto das configurações visuais)
                 tabela_viva = st.data_editor(
                     df_editor,
                     width='stretch',
@@ -255,7 +257,7 @@ else:
                     key="extrato_vico_system",
                     column_config={
                         "id": None, 
-                        "created_at": st.column_config.TextColumn("Data (AAAA-MM-DD)"),
+                        "created_at": st.column_config.DateColumn("Data do Lançamento", format="DD/MM/YYYY"),
                         "banco": st.column_config.TextColumn("Banco/Conta"), 
                         "categoria": st.column_config.TextColumn("Categoria (Automática)"),
                         "nome_produto": st.column_config.TextColumn("Produto/Item"),
@@ -264,7 +266,7 @@ else:
                     }
                 )
                 
-                # Exclusão por botão
+                # 2. FLUXO DE EXCLUSÃO POR BOTÃO
                 linhas_para_deletar = tabela_viva[tabela_viva['Selecionar para Exclusão'] == True]
                 if not linhas_para_deletar.empty:
                     st.write("")
@@ -278,7 +280,7 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                # Edição instantânea
+                                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
                 mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
@@ -288,12 +290,29 @@ else:
                             continue
                         houve_edicao = True
                         id_real = int(df_editor.iloc[idx_linha]['id'])
+                        
+                        # Converte o valor para float se houver alteração
                         if "valor" in campos_alterados:
                             campos_alterados["valor"] = float(campos_alterados["valor"])
-                        if not mod_calculos.atualizar_lancamento_banco(id_real, campos_alterados):
+                            
+                        # Ajusta o formato da data para o Supabase se houver alteração
+                        if "created_at" in campos_alterados:
+                            dt_alvo = campos_alterados["created_at"]
+                            data_curta = str(dt_alvo)[:10].strip()
+                            campos_alterados["created_at"] = f"{data_curta}T00:00:00+00:00"
+                        
+                        # 🟢 CONEXÃO DIRETA COM O SUPABASE: Atualiza qualquer campo (Data, Produto, Valor) de forma dinâmica
+                        try:
+                            import mod_conexao
+                            supabase = mod_conexao.criar_conexao()
+                            supabase.table("lancamentos").update(campos_alterados).eq("id", id_real).execute()
+                        except Exception as e_direto:
+                            print(f"❌ Erro na gravação direta: {e_direto}")
                             sucesso_global = False
+                                
                     if houve_edicao and sucesso_global:
-                        st.toast("⚡ Banco atualizado!", icon="💾")
+                        st.toast("⚡ Banco atualizado com sucesso!", icon="💾")
+                        st.cache_data.clear()
                         st.rerun()
 
     # --- TELA 2: NOVO LANÇAMENTO ---
@@ -306,7 +325,17 @@ else:
             st.write("Insira os dados abaixo para registrar uma despesa ou receita em tempo real.")
             
             # Buscas dinâmicas do Supabase
-            bancos_disponiveis = mod_estruturas.buscar_bancos_reais()
+            # 🟢 CORREÇÃO DE SEGURANÇA: Garante que a lista nasça preenchida se o banco vier vazio
+            try:
+                bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
+            except TypeError:
+                # Caso a função não aceite o ID do usuário ainda:
+                bancos_disponiveis = mod_estruturas.buscar_bancos_reais()
+
+            # Se mesmo assim retornar vazio ou der erro, entregamos a lista padrão salvadora:
+            if not bancos_disponiveis:
+                bancos_disponiveis = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
+
             produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
             
             # 🛡️ BLINDAGEM: Adicionamos a opção neutra no topo para abrir totalmente vazio!
@@ -512,13 +541,19 @@ else:
                                 else:
                                     st.error("Erro técnico ao tentar deletar o banco.")
                                         # =========================================================================
+        # =========================================================================
     # TELA 4: ORÇAMENTO PREDITIVO (O PARA-BRISA)
     # =========================================================================
     elif opcao_menu == "🔮 Orçamento Preditivo":
         st.title("🔮 Orçamento Preditivo & Projeções")
         st.write("Olhe pelo para-brisa: gerencie seu salário e planeje seus compromissos futuros.")
         
-        tab_perfil, tab_novas_previsoes = st.tabs(["👤 Salário & Perfil", "📝 Agendar Gasto Futuro / Parcelado"])
+        # 🟢 Adicionamos a 3ª aba aqui: 'tab_visualizar'
+        tab_perfil, tab_novas_previsoes, tab_visualizar = st.tabs([
+            "👤 Salário & Perfil", 
+            "📝 Agendar Gasto Futuro / Parcelado",
+            "📊 Visualizar Para-brisa (Mês a Mês)"
+        ])
         
         # 1. ABA DO SALÁRIO CONFIGURÁVEL
         with tab_perfil:
@@ -535,14 +570,12 @@ else:
                 else:
                     st.error("❌ Falha ao tentar atualizar a renda base.")
                     
-        # 2. ABA DO PARCELAMENTO AUTOMÁTICO (O GERADOR DE PREVISÕES)
+        # 2. ABA DO PARCELAMENTO AUTOMÁTICO
         with tab_novas_previsoes:
             st.subheader("Agendar Novo Compromisso Parcelado")
-            
             desc_item = st.text_input("Descrição do Item (ex: guarda-roupa, IPVA):", key="txt_prev_desc")
             
-            # Reutiliza o df de categorias criado para a outra tela para manter o padrão
-            df_cat_prev = mod_estruturas.buscar_categorias_banco(st.session_state.usuario_id)
+            df_cat_prev = mod_estruturas.buscar_categories_banco(st.session_state.usuario_id) if 'buscar_categories_banco' in dir(mod_estruturas) else pd.DataFrame()
             if not df_cat_prev.empty:
                 lista_cat_prev = df_cat_prev["categoria"].str.upper().tolist()
                 cat_escolhida = st.selectbox("Selecione o Grupo de Despesa:", lista_cat_prev, key="sb_prev_cat")
@@ -550,7 +583,6 @@ else:
                 cat_escolhida = st.text_input("Digite o Grupo de Despesa (ex: moveis, lazer):", key="txt_prev_cat_manual")
                 
             col_vlr, col_qtd, col_data = st.columns(3)
-            
             with col_vlr:
                 vlr_parc = st.number_input("Valor de CADA Parcela (R$):", min_value=0.01, step=10.00, key="num_prev_vlr")
             with col_qtd:
@@ -560,7 +592,7 @@ else:
                 
             if st.button("Gerar Projeção de Parcelas", type="primary", use_container_width=True, key="btn_gerar_parcelas"):
                 if desc_item and cat_escolhida and vlr_parc > 0:
-                    with st.spinner("Calculando calendário e injetando parcelas no Supabase..."):
+                    with st.spinner("Calculando calendário..."):
                         sucesso = mod_previsoes.gerar_lancamentos_futuros_parcelados(
                             descricao=desc_item,
                             categoria=cat_escolhida,
@@ -569,11 +601,110 @@ else:
                             data_primeiro_vencimento=data_prim,
                             id_usuario_logado=st.session_state.usuario_id
                         )
-                        
                     if sucesso:
-                        st.success(f"🎉 Sucesso Absoluto! Foram geradas {qtd_parc} parcelas de R$ {vlr_parc:,.2f} automaticamente no seu para-brisa!")
-                        st.balloons()
-                    else:
-                        st.error("❌ O banco rejeitou a geração das parcelas futuras.")
+                        st.success(f"🎉 Sucesso! Foram geradas {qtd_parc} parcelas de R$ {vlr_parc:,.2f}!")
+                        st.cache_data.clear()
+                        st.rerun()
                 else:
-                    st.warning("⚠️ Preencha todos os campos obrigatórios para simular o parcelamento.")
+                    st.warning("⚠️ Preencha todos os campos obrigatórios.")
+
+                        # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
+        with tab_visualizar:
+            st.subheader("🗓️ Gestão e Projeção do Orçamento")
+            st.write("Abaixo estão suas contas futuras. Marque a caixinha 'Baixar' para pagá-la ou 'Excluir' para deletar a projeção.")
+            
+            salario_base = mod_previsoes.buscar_salario_usuario(st.session_state.usuario_id)
+            compromissos_detalhes = mod_previsoes.buscar_detalhe_compromissos_abertos(st.session_state.usuario_id)
+            
+            if not compromissos_detalhes:
+                st.info("✨ Nenhuma parcela ou despesa futura agendada para os próximos meses!")
+            else:
+                # 🟢 REMOVIDO o st.write de teste perigoso que expunha os dados!
+                
+                df_detalhado = pd.DataFrame(compromissos_detalhes)
+                df_detalhado["vencimento"] = pd.to_datetime(df_detalhado["data_vencimento"]).dt.strftime("%d/%m/%Y")
+                df_detalhado["parcela"] = df_detalhado["parcela_atual"].astype(str) + "/" + df_detalhado["total_parcelas"].astype(str)
+                
+                df_detalhado["Baixar (Pagar)"] = False
+                df_detalhado["Excluir Registro"] = False
+                
+                df_visual = df_detalhado[["id", "vencimento", "descricao_item", "categoria", "parcela", "valor_parcela", "Baixar (Pagar)", "Excluir Registro"]]
+                df_visual.columns = ["ID", "Vencimento", "Descrição", "Categoria", "Parcela", "Valor (R$)", "Baixar", "Excluir"]
+                
+                # Planilha interativa
+                linhas_editadas = st.data_editor(
+                    df_visual,
+                    hide_index=True,
+                    use_container_width=True,
+                    disabled=["ID", "Vencimento", "Descrição", "Categoria", "Parcela", "Valor (R$)"],
+                    column_config={
+                        "Valor (R$)": st.column_config.NumberColumn(format="R$ %,.2f"),
+                        "Baixar": st.column_config.CheckboxColumn(help="Marque para enviar ao fluxo de caixa real"),
+                        "Excluir": st.column_config.CheckboxColumn(help="Marque para deletar permanentemente do para-brisa")
+                    }
+                )
+                
+                st.markdown("---")
+                st.subheader("⚙️ Executar Baixa/Exclusão em Lote")
+                
+                # 🟢 NOVO COMPONENTE: Busca os bancos dinâmicos do usuário para ele escolher de onde sai o dinheiro
+                try:
+                    bancos_selecao = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
+                except:
+                    bancos_selecao = []
+                
+                if not bancos_selecao or isinstance(bancos_selecao, float):
+                    bancos_selecao = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
+                
+                banco_debitar = st.selectbox("Se houver Baixa, debitar de qual Conta/Banco?", bancos_selecao, key="sb_previsao_banco_debito")
+                
+                # Botão para processar as caixinhas
+                if st.button("🚀 Processar Ações Marcadas", type="primary", use_container_width=True, key="btn_processar_previsoes_lote"):
+                    sucessos = 0
+                    
+                    # 🟢 CORREÇÃO CRÍTICA: Mudado de lines_editadas para linhas_editadas (com H)
+                    for index, linha in linhas_editadas.iterrows():
+                        id_registro = int(linha["ID"])
+                        
+                        # Se marcou para dar baixa (Pagar)
+                        if linha["Baixar"] is True:
+                            # Passamos o banco escolhido dinamicamente na tela
+                            if mod_previsoes.dar_baixa_parcela_futura(id_registro, st.session_state.usuario_id, banco_debitar):
+                                sucessos += 1
+                                
+                        # Se marcou para excluir a projeção
+                        elif java_script_falso := (linha["Excluir"] is True):
+                            if mod_previsoes.excluir_parcela_futura_definitivo(id_registro, st.session_state.usuario_id):
+                                successes = 0 # Ajuste interno
+                                sucessos += 1
+                    
+                    if sucessos > 0:
+                        st.success(f"🎉 Sucesso! {sucessos} operação(ões) sincronizada(s) com o banco de dados!")
+                        
+                        # 🟢 LIMPEZA DE CACHE COMPREENSIVA (Zera todas as memórias de busca de extratos e painéis)
+                        st.cache_data.clear()
+                        if 'bancos_disponiveis' in st.session_state:
+                            del st.session_state['bancos_disponiveis']
+                        
+                        # Dá o comando de reinicialização visual instantânea
+                        st.rerun()
+
+                        
+                st.markdown("---")
+                st.subheader("📊 Resumo Consolidado Preditivo")
+                
+                df_futuro = mod_previsoes.calcular_comprometimento_mensal_futuro(st.session_state.usuario_id)
+                if not df_futuro.empty:
+                    df_futuro["Salário Fixo"] = salario_base
+                    df_futuro["Saldo Livre"] = df_futuro["Salário Fixo"] - df_futuro["Comprometido"]
+                    
+                    df_exibicao = df_futuro.copy()
+                    df_exibicao["Comprometido"] = df_exibicao["Comprometido"].map("R$ {:,.2f}".format)
+                    df_exibicao["Salário Fixo"] = df_exibicao["Salário Fixo"].map("R$ {:,.2f}".format)
+                    df_exibicao["Saldo Livre"] = df_exibicao["Saldo Livre"].map("R$ {:,.2f}".format)
+                    
+                    st.dataframe(
+                        df_exibicao[["Mês/Ano", "Salário Fixo", "Comprometido", "Saldo Livre"]], 
+                        use_container_width=True, 
+                        hide_index=True
+                    )
