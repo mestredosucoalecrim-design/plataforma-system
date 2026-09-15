@@ -58,7 +58,7 @@ NOME_MESES = [
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO (COM SISTEMA HIDE INTEGRADO)
 # =========================================================================
-else:
+if st.session_state.logado:
     st.sidebar.title("S.Y.S.T.E.M v2.0")
     st.sidebar.write("👤 Usuário: **William: Administrador**")
     
