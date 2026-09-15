@@ -287,10 +287,7 @@ else:
                         # 🟢 CONFIGURAÇÃO INTERATIVA: Transforma a caixa de texto em um calendário visual!
                         "created_at": st.column_config.DateColumn(
                             "Data do Lançamento",
-                            format="DD/MM/YYYY",
-                            min_value=pd.datetime(2020, 1, 1) if 'datetime' in dir(pd) else None,
-                            max_value=pd.datetime(2030, 12, 31) if 'datetime' in dir(pd) else None
-                        ),
+                            format="DD/MM/YYYY"),
                         "banco": st.column_config.TextColumn("Banco/Conta"), 
                         "categoria": st.column_config.TextColumn("Categoria (Automática)"),
                         "nome_produto": st.column_config.TextColumn("Produto/Item"),
