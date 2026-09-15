@@ -92,7 +92,7 @@ if not st.session_state.logado:
 # =========================================================================
 else:
     st.sidebar.title("S.Y.S.T.E.M v2.0")
-    st.sidebar.write("👤 Usuário: **Administrador Teste**")
+    st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
     
     opcao_menu = st.sidebar.radio(
         "Selecione uma Tela:",
