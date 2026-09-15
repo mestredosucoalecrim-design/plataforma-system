@@ -62,8 +62,10 @@ if not st.session_state.logado:
     st.title("Plataforma S.Y.S.T.E.M")
     st.subheader("Acesso Restrito")
     
+    # Cria as duas abas limpas na tela
     aba_login, aba_cadastro = st.tabs(["🔒 Entrar no Sistema", "📝 Criar Nova Conta"])
     
+    # 1. FORMULÁRIO DE LOGIN (Tudo o que pertence ao acesso)
     with aba_login:
         email_input = st.text_input("E-mail de Acesso:", placeholder="exemplo@sistema.com", key="txt_login_email")
         senha_input = st.text_input("Senha Securitária:", type="password", key="txt_login_senha")
@@ -71,11 +73,9 @@ if not st.session_state.logado:
         if st.button("Acessar Plataforma", type="primary", use_container_width=True):
             if email_input and senha_input:
                 with st.spinner("Autenticando credenciais na nuvem..."):
-                    # Dispara a validação real no Supabase
                     resultado_login = mod_calculos.realizar_login_real_supabase(email_input, senha_input)
                 
                 if resultado_login["status"] == "sucesso":
-                    # 🔥 GUARDA NA MEMÓRIA DA SESSÃO: Transforma o app em privado para este ID único!
                     st.session_state.logado = True
                     st.session_state.usuario_id = resultado_login["usuario_id"]
                     st.session_state.usuario_email = resultado_login["email"]
@@ -87,16 +87,16 @@ if not st.session_state.logado:
             else:
                 st.warning("⚠️ Campo obrigatório: Preencha o e-mail e a senha para acessar.")
                 
-                with aba_cadastro:
-                     st.write("### Formulário de Cadastro")
+    # 2. 📝 FORMULÁRIO DE CADASTRO (Os campos agora estão realocados no lugar certo!)
+    with aba_cadastro:
+        st.write("### Formulário de Cadastro")
         
-        # 🟢 ESSES SÃO OS CAMPOS QUE ESTÃO FALTANDO NA SUA TELA:
         novo_email = st.text_input("Defina seu E-mail de Acesso:", placeholder="seu-email@sistema.com", key="txt_cadastro_email")
         nova_senha = st.text_input("Defina sua Senha Securitária:", type="password", placeholder="Mínimo 6 caracteres", key="txt_cadastro_senha")
         confirmar_senha = st.text_input("Confirme sua Senha:", type="password", key="txt_cadastro_confirma")
         
-        # Botão para disparar o cadastro
-        if st.button("Criar Minha Conta", type="primary", use_container_width=True):
+        # Botão para disparar o cadastro de novo usuário
+        if st.button("Criar My Conta", type="primary", use_container_width=True):
             if novo_email and nova_senha and confirmar_senha:
                 if nova_senha != confirmar_senha:
                     st.error("❌ As senhas digitadas não são iguais. Tente novamente.")
@@ -105,7 +105,6 @@ if not st.session_state.logado:
                 else:
                     with st.spinner("Registrando credenciais na nuvem..."):
                         try:
-                            # Chama a função que criamos no seu arquivo de cálculos
                             resultado_cadastro = mod_calculos.realizar_cadastro_supabase(novo_email, nova_senha)
                             
                             if resultado_cadastro.get("status") == "sucesso":
