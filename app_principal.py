@@ -286,10 +286,16 @@ else:
                     key="extrato_vico_system",
                     column_config={
                         "id": None, 
-                        # 🟢 CONFIGURAÇÃO INTERATIVA: Calendário visual perfeitamente compatível
-                        "created_at": st.column_config.DateColumn(
-                            "Data do Lançamento",
-                            format="DD/MM/YYYY"
+                        # 🟢 TRATAMENTO DE DATA UNIVERSAL (Evita NameError de tipos):
+                        if "created_at" in campos_alterados:
+                            dt_alvo = campos_alterados["created_at"]
+                            
+                            # Se o calendário gerar o formato padrão, extraímos os 10 primeiros caracteres (AAAA-MM-DD)
+                            data_curta = str(dt_alvo)[:10].strip()
+                                
+                            # Monta o padrão timestamptz que o Supabase exige
+                            campos_alterados["created_at"] = f"{data_curta}T00:00:00+00:00"
+
                         ),
                         "banco": st.column_config.TextColumn("Banco/Conta"), 
                         "categoria": st.column_config.TextColumn("Categoria (Automática)"),
