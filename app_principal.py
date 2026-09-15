@@ -4,11 +4,12 @@ import plotly.express as px
 import mod_calculos
 import mod_estruturas
 import pandas as pd
-# 🟢 SUBSTITUA A LINHA 6 POR ESTE BLOCO BLINDADO:
 import os
 import sys
 
-# Força o Python a olhar a pasta atual do projeto
+# =========================================================================
+# 1. TRATAMENTO DE DIRETÓRIOS E IMPORTS DINÂMICOS
+# =========================================================================
 diretorio_atual = os.path.dirname(os.path.abspath(__file__))
 if diretorio_atual not in sys.path:
     sys.path.append(diretorio_atual)
@@ -16,7 +17,6 @@ if diretorio_atual not in sys.path:
 try:
     import mod_previsoes
 except ModuleNotFoundError:
-    # Se der erro, o Python varre a pasta e tenta achar variações de nome (ex: Maiúsculas)
     arquivos_pasta = os.listdir(diretorio_atual)
     arquivo_encontrado = None
     for f in arquivos_pasta:
@@ -25,44 +25,47 @@ except ModuleNotFoundError:
             break
             
     if arquivo_encontrado:
-        # Importa dinamicamente se o nome estiver com letras maiúsculas no GitHub
         import importlib
         mod_previsoes = importlib.import_module(arquivo_encontrado)
     else:
-        # Se realmente não existir, mostra a lista real de arquivos na tela do log
         print(f"❌ Arquivos reais na pasta do Streamlit: {arquivos_pasta}")
         st.error(f"❌ O arquivo 'mod_previsoes.py' não foi achado nesta pasta. Arquivos disponíveis: {arquivos_pasta}")
         st.stop()
 
-# 1. Configuração de Layout da Página
+# =========================================================================
+# 2. CONFIGURAÇÃO DE LAYOUT DA PÁGINA
+# =========================================================================
 st.set_page_config(
     page_title="Plataforma S.Y.S.T.E.M",
     page_icon="📊",
     layout="centered"
 )
 
-# 2. Inicialização da Memória de Sessão
+# =========================================================================
+# 3. INICIALIZAÇÃO DA MEMÓRIA DE SESSÃO (Roda sempre em segundo plano)
+# =========================================================================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "ano_atual" not in st.session_state:
-    import datetime
     st.session_state.ano_atual = datetime.date.today().year
 if "mes_atual" not in st.session_state:
-    import datetime
     st.session_state.mes_atual = datetime.date.today().month
+
 NOME_MESES = [
     "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]    
     
 # =========================================================================
-# TELA 2: MENU PRINCIPAL E NAVEGAÇÃO (COM SISTEMA HIDE INTEGRADO)
+# 4. FLUXO DE TELAS DA APLICAÇÃO (Condicional Principal)
 # =========================================================================
 if st.session_state.logado:
+    # ---------------------------------------------------------------------
+    # CÓDIGO DO SISTEMA (USUÁRIO AUTENTICADO)
+    # ---------------------------------------------------------------------
     st.sidebar.title("S.Y.S.T.E.M v2.0")
     st.sidebar.write("👤 Usuário: **William: Administrador**")
     
-    # 1. 🟢 CORREÇÃO: Adicionamos a opção '🏠 Menu Principal' como a primeira da lista
     opcao_menu = st.sidebar.radio(
         "Selecione uma Tela:",
         ["🏠 Menu Principal", "📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
@@ -74,13 +77,15 @@ if st.session_state.logado:
         st.session_state.logado = False
         st.rerun()
 
-    # --- TELA DE BOAS-VINDAS: O SEU MENU LIMPO ANTES DE ENTRAR NOS DADOS ---
+    # --- TELA DE BOAS-VINDAS ---
     if opcao_menu == "🏠 Menu Principal":
         st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
-        st.markdown(f"Olá, **{st.session_state.usuario_email}**! O seu cockpit financeiro está totalmente pronto e conectado.")
+        
+        # Uso do .get() evita que quebre se a variável 'usuario_email' ainda não foi instanciada no Supabase
+        email_usuario = st.session_state.get("usuario_email", "William")
+        st.markdown(f"Olá, **{email_usuario}**! O seu cockpit financeiro está totalmente pronto e conectado.")
         st.write("Utilize a barra de navegação lateral esquerda para acessar as ferramentas de análise, cadastros ou projeções futuras.")
         
-        # Um design elegante de cartões visuais para recepção do usuário
         col_m1, col_m2 = st.columns(2)
         with col_m1:
             st.info("### 📈 Painel Geral\nConsulte saldos consolidados, gráficos por categorias e o extrato detalhado das suas contas.")
@@ -95,9 +100,8 @@ if st.session_state.logado:
             df_global = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
             resumo = mod_calculos.calcular_resumo_memoria(df_global)
         
-        # Painel fixo do topo
         col1, col2, col3 = st.columns(3)
-        col1.metric(label="Saldo Geral Consolidado", value=f"R$ {resumo['saldo']:,.2f}")
+        col1.metric(label="Saldo Geral Consolidated", value=f"R$ {resumo['saldo']:,.2f}")
         col2.metric(label="Total de Receitas", value=f"R$ {resumo['receitas']:,.2f}")
         col3.metric(label="Total de Despesas", value=f"R$ {resumo['despesas']:,.2f}")
         
@@ -148,6 +152,30 @@ if st.session_state.logado:
             df_produtos_top = mod_calculos.obter_maiores_produtos_mes_memoria(df_extrato)
 
             st.markdown("### 📊 Indicadores Visuais de Desempenho")
+            # Continuará o seu código de gráficos a partir daqui...
+
+else:
+    # ---------------------------------------------------------------------
+    # TELA DE LOGIN (SÓ APARECE SE LOGADO FOR FALSE)
+    # ---------------------------------------------------------------------
+    st.title("🔐 Login - Plataforma S.Y.S.T.E.M")
+    st.write("Por favor, faça a autenticação para acessar seu painel financeiro.")
+    
+    # Substitua as linhas abaixo pela sua conexão real com o Supabase futuramente
+    input_email = st.text_input("E-mail")
+    input_senha = st.text_input("Senha", type="password")
+    
+    if st.button("Entrar no Sistema", use_container_width=True):
+        # Valide com sua função do Supabase aqui. Exemplo de simulação direta:
+        if input_email and input_senha: 
+            st.session_state.logado = True
+            st.session_state.usuario_email = input_email
+            st.session_state.usuario_id = "ID_DO_SUPABASE"  # Insira o ID real vindo do banco
+            st.success("Acesso autorizado!")
+            st.rerun()
+        else:
+            st.error("Por favor, preencha os campos de acesso.")
+
                                    
             # 🎮 A MÁGICA DA HORIZONTAL: Divide a tela em 3 colunas iguais!
             col_graf1, col_graf2, col_graf3 = st.columns(3)
