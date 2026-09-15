@@ -68,7 +68,7 @@ if st.session_state.logado:
     
     opcao_menu = st.sidebar.radio(
         "Selecione uma Tela:",
-        ["🏠 Menu Principal", "📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
+        ["🏠 Menu Principal", "📈 Painel e Extratos", "📥Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
         key="menu_principal"
     )
     
