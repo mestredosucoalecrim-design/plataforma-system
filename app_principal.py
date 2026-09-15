@@ -307,7 +307,7 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                # Edição instantânea
+                                # Edição instantânea (Versão inteligente com ajuste automático de data)
                 mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
@@ -317,12 +317,23 @@ else:
                             continue
                         houve_edicao = True
                         id_real = int(df_editor.iloc[idx_linha]['id'])
+                        
+                        # 🟢 TRATAMENTO DE VALOR: Mantém a conversão para float
                         if "valor" in campos_alterados:
                             campos_alterados["valor"] = float(campos_alterados["valor"])
+                            
+                        # 🟢 TRATAMENTO DE DATA: Se o usuário editou a data, ajusta para o formato que o Supabase aceita
+                        if "created_at" in campos_alterados:
+                            data_curta = campos_alterados["created_at"].strip()
+                            # Transforma '2026-09-14' no padrão '2026-09-14T00:00:00+00:00' aceito pelo timestamptz
+                            campos_alterados["created_at"] = f"{data_curta}T00:00:00+00:00"
+                            
                         if not mod_calculos.atualizar_lancamento_banco(id_real, campos_alterados):
                             sucesso_global = False
+                            
                     if houve_edicao and sucesso_global:
                         st.toast("⚡ Banco atualizado!", icon="💾")
+                        st.cache_data.clear() # Limpa a memória para os saldos e gráficos atualizarem na hora
                         st.rerun()
 
     # --- TELA 2: NOVO LANÇAMENTO ---
