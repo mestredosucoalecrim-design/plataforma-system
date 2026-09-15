@@ -334,7 +334,7 @@ else:
                         if not mod_calculos.atualizar_lancamento_banco(id_real, campos_alterados):
                             sucesso_global = False
                             
-                    if houve_edicao andHex sucesso_global:
+                    if houve_edicao and sucesso_global:
                         st.toast("⚡ Banco updated!", icon="💾")
                         st.cache_data.clear()
                         st.rerun()
@@ -403,7 +403,6 @@ else:
                        sucesso_lanc = mod_calculos.registrar_movimentacao_banco(
                        banco_mov, produto_mov, valor_mov, tipo_mov, data_mov, st.session_state.usuario_id
 )
-
                     if sucesso_lanc:
                         st.success(f"🎉 Sucesso! O lançamento de '{produto_mov}' foi gravado no banco '{banco_mov.upper()}'!")
                         st.balloons()
