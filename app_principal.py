@@ -87,8 +87,27 @@ if not st.session_state.logado:
             else:
                 st.warning("⚠️ Todos os campos são obrigatórios para realizar o cadastro.")
 
-# 🟢 NOVO BLOCO: RENDERIZA O SEU MARCADOR DE COMBUSTÍVEL SE A PRIMEIRA OPÇÃO FOR SELECIONADA
-if opcao_menu == "🏠 Menu Principal":
+# =========================================================================
+# TELA 2: MENU PRINCIPAL E NAVEGAÇÃO
+# =========================================================================
+else:
+    st.sidebar.title("S.Y.S.T.E.M v2.0")
+    st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
+    
+    # 🟢 ADICIONADO: '🏠 Menu Principal' entra como a primeira opção da lista
+    opcao_menu = st.sidebar.radio(
+        "Selecione uma Tela:",
+        ["🏠 Menu Principal", "📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
+        key="menu_principal"
+    )
+    
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🚪 Sair do Sistema"):
+        st.session_state.logado = False
+        st.rerun()
+
+    # 🟢 NOVO BLOCO: RENDERIZA O SEU MARCADOR DE COMBUSTÍVEL SE A PRIMEIRA OPÇÃO FOR SELECIONADA
+    if opcao_menu == "🏠 Menu Principal":
         st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
         st.markdown(f"Olá, **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
         
@@ -133,14 +152,16 @@ if opcao_menu == "🏠 Menu Principal":
                     f"💡 **Conselho do Comandante:** Para fechar o mês no azul, reduza o ritmo diário para no máximo **R$ {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
                 )
 
-        # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
-        elif opcao_menu == "📈 Painel e Extratos":
+    # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
+    elif opcao_menu == "📈 Painel e Extratos":
+        st.title("Painel Financeiro")
+        st.title("Painel Financeiro")
         
-            # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
-            with st.spinner("Sincronizando base histórica com a nuvem..."):
+        # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
+        with st.spinner("Sincronizando base histórica com a nuvem..."):
             # CORREÇÃO: Enviamos o st.session_state.usuario_id para o motor!
-                df_global = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
-                resumo = mod_calculos.calcular_resumo_memoria(df_global)
+            df_global = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
+            resumo = mod_calculos.calcular_resumo_memoria(df_global)
 
         
         # Painel fixo do topo
@@ -342,14 +363,14 @@ if opcao_menu == "🏠 Menu Principal":
                         st.cache_data.clear()
                         st.rerun()
 
-# --- TELA 2: NOVO LANÇAMENTO ---
-elif opcao_menu == "📥 Novo Lançamento":
-                # Criamos colunas invisíveis para "espremer" o formulário no centro, simulando um UserForm do VBA!
-                col_margem_esq, col_formulario_central, col_margem_dir = st.columns([0.1, 0.8, 0.1])
-            
-with col_formulario_central:
-        st.title("📥 Registrar Movimentação Financeira")
-        st.write("Insira os dados abaixo para registrar uma despesa ou receita em tempo real.")
+    # --- TELA 2: NOVO LANÇAMENTO ---
+    elif opcao_menu == "📥 Novo Lançamento":
+        # Criamos colunas invisíveis para "espremer" o formulário no centro, simulando um UserForm do VBA!
+        col_margem_esq, col_formulario_central, col_margem_dir = st.columns([0.1, 0.8, 0.1])
+        
+        with col_formulario_central:
+            st.title("📥 Registrar Movimentação Financeira")
+            st.write("Insira os dados abaixo para registrar uma despesa ou receita em tempo real.")
             
             # Buscas dinâmicas do Supabase
             # 🟢 CORREÇÃO DE SEGURANÇA: Garante que a lista nasça preenchida se o banco vier vazio
