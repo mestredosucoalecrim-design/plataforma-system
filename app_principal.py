@@ -88,7 +88,7 @@ if not st.session_state.logado:
                 st.warning("⚠️ Todos os campos são obrigatórios para realizar o cadastro.")
 
 # 🟢 NOVO BLOCO: RENDERIZA O SEU MARCADOR DE COMBUSTÍVEL SE A PRIMEIRA OPÇÃO FOR SELECIONADA
-    if opcao_menu == "🏠 Menu Principal":
+if opcao_menu == "🏠 Menu Principal":
         st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
         st.markdown(f"Olá, **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
         
