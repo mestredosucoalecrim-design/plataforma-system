@@ -276,7 +276,7 @@ else:
                 df_editor['created_at'] = df_editor['created_at'].dt.strftime('%Y-%m-%d')
                 df_editor['Selecionar para Exclusão'] = False
                 
-                tabela_viva = st.data_editor(
+                    tabela_viva = st.data_editor(
                     df_editor,
                     width='stretch',
                     hide_index=True,
