@@ -58,8 +58,8 @@ NOME_MESES = [
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO (COM SISTEMA HIDE INTEGRADO)
 # =========================================================================
 else:
-    st.sidebar.title("S.Y.S.T.E.M v2.0")
-    st.sidebar.write("👤 Usuário: **William: Administrador**")
+st.sidebar.title("S.Y.S.T.E.M v2.0")
+st.sidebar.write("👤 Usuário: **William: Administrador**")
     
     # 1. 🟢 CORREÇÃO: Adicionamos a opção '🏠 Menu Principal' como a primeira da lista
     opcao_menu = st.sidebar.radio(
