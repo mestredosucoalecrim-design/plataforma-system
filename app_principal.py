@@ -139,8 +139,8 @@ if opcao_menu == "🏠 Menu Principal":
             # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
             with st.spinner("Sincronizando base histórica com a nuvem..."):
             # CORREÇÃO: Enviamos o st.session_state.usuario_id para o motor!
-            df_global = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
-            resumo = mod_calculos.calcular_resumo_memoria(df_global)
+                df_global = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
+                resumo = mod_calculos.calcular_resumo_memoria(df_global)
 
         
         # Painel fixo do topo
