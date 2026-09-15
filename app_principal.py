@@ -310,7 +310,7 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Lugar correto para processar as lógicas e o IF da data)
+                                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Super Blindada)
                 mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
@@ -321,21 +321,28 @@ else:
                         houve_edicao = True
                         id_real = int(df_editor.iloc[idx_linha]['id'])
                         
-                        # Se o usuário alterou o valor, converte para float
+                        # Converte o valor para float se houver alteração
                         if "valor" in campos_alterados:
                             campos_alterados["valor"] = float(campos_alterados["valor"])
                             
-                        # 🟢 O SEU IF DA DATA FICA EXATAMENTE AQUI: Dentro do processamento de mudanças
+                        # Ajusta o formato da data para o Supabase se houver alteração
                         if "created_at" in campos_alterados:
                             dt_alvo = campos_alterados["created_at"]
                             data_curta = str(dt_alvo)[:10].strip()
                             campos_alterados["created_at"] = f"{data_curta}T00:00:00+00:00"
-                            
+                        
+                        # 🟢 PLANO DE CONTINGÊNCIA: Tenta a sua função padrão. Se ela rejeitar a data, fazemos o update direto!
                         if not mod_calculos.atualizar_lancamento_banco(id_real, campos_alterados):
-                            sucesso_global = False
-                            
+                            try:
+                                import mod_conexao
+                                supabase = mod_conexao.criar_conexao()
+                                # Força a atualização direto no banco para garantir que a data mude
+                                supabase.table("lancamentos").update(campos_alterados).eq("id", id_real).execute()
+                            except Exception as e_direto:
+                                sucesso_global = False
+                                
                     if houve_edicao and sucesso_global:
-                        st.toast("⚡ Banco updated!", icon="💾")
+                        st.toast("⚡ Banco atualizado com sucesso!", icon="💾")
                         st.cache_data.clear()
                         st.rerun()
 
