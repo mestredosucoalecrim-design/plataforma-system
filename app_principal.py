@@ -271,7 +271,7 @@ else:
 
             if df_extrato.empty:
                 st.warning(f"⚠️ Nenhum lançamento efetuado no banco '{banco_selecionado.upper()}' neste período.")
-                        else:
+            else:
                 df_editor = df_extrato[['id', 'created_at', 'banco', 'categoria', 'nome_produto', 'valor']].copy()
                 
                 # Força a coluna a ser do tipo Data para o calendário funcionar
