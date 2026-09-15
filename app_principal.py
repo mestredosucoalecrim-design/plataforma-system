@@ -3,47 +3,17 @@ import datetime
 import plotly.express as px
 import mod_calculos
 import mod_estruturas
+import mod_previsoes
 import pandas as pd
-import os
-import sys
 
-# =========================================================================
-# 1. TRATAMENTO DE DIRETÓRIOS E IMPORTS DINÂMICOS
-# =========================================================================
-diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-if diretorio_atual not in sys.path:
-    sys.path.append(diretorio_atual)
-
-try:
-    import mod_previsoes
-except ModuleNotFoundError:
-    arquivos_pasta = os.listdir(diretorio_atual)
-    arquivo_encontrado = None
-    for f in arquivos_pasta:
-        if f.lower() == "mod_previsoes.py":
-            arquivo_encontrado = f.replace(".py", "")
-            break
-            
-    if arquivo_encontrado:
-        import importlib
-        mod_previsoes = importlib.import_module(arquivo_encontrado)
-    else:
-        print(f"❌ Arquivos reais na pasta do Streamlit: {arquivos_pasta}")
-        st.error(f"❌ O arquivo 'mod_previsoes.py' não foi achado nesta pasta. Arquivos disponíveis: {arquivos_pasta}")
-        st.stop()
-
-# =========================================================================
-# 2. CONFIGURAÇÃO DE LAYOUT DA PÁGINA
-# =========================================================================
+# 1. Configuração de Layout da Página
 st.set_page_config(
     page_title="Plataforma S.Y.S.T.E.M",
     page_icon="📊",
     layout="centered"
 )
 
-# =========================================================================
-# 3. INICIALIZAÇÃO DA MEMÓRIA DE SESSÃO (Roda sempre em segundo plano)
-# =========================================================================
+# 2. Inicialização da Memória de Sessão
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "ano_atual" not in st.session_state:
@@ -54,21 +24,79 @@ if "mes_atual" not in st.session_state:
 NOME_MESES = [
     "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-]    
+]
+
+# =========================================================================
+# TELA 1: INTERFACE DE LOGIN / CADASTRO (AUTENTICAÇÃO REAL CONECTADA)
+# =========================================================================
+if not st.session_state.logado:
+    st.title("Plataforma S.Y.S.T.E.M")
+    st.subheader("Acesso Restrito")
     
+    # Cria as duas abas limpas na tela
+    aba_login, aba_cadastro = st.tabs(["🔒 Entrar no Sistema", "📝 Criar Nova Conta"])
+    
+    # 1. FORMULÁRIO DE LOGIN (Tudo o que pertence ao acesso)
+    with aba_login:
+        email_input = st.text_input("E-mail de Acesso:", placeholder="exemplo@sistema.com", key="txt_login_email")
+        senha_input = st.text_input("Senha Securitária:", type="password", key="txt_login_senha")
+        
+        if st.button("Acessar Plataforma", type="primary", use_container_width=True):
+            if email_input and senha_input:
+                with st.spinner("Autenticando credenciais na nuvem..."):
+                    resultado_login = mod_calculos.realizar_login_real_supabase(email_input, senha_input)
+                
+                if resultado_login["status"] == "sucesso":
+                    st.session_state.logado = True
+                    st.session_state.usuario_id = resultado_login["usuario_id"]
+                    st.session_state.usuario_email = resultado_login["email"]
+                    
+                    st.toast(f"Bem-vindo de volta, {resultado_login['email']}!", icon="🔑")
+                    st.rerun()
+                else:
+                    st.error(resultado_login["mensagem"])
+            else:
+                st.warning("⚠️ Campo obrigatório: Preencha o e-mail e a senha para acessar.")
+                
+    # 2. 📝 FORMULÁRIO DE CADASTRO (Os campos agora estão realocados no lugar certo!)
+    with aba_cadastro:
+        st.write("### Formulário de Cadastro")
+        
+        novo_email = st.text_input("Defina seu E-mail de Acesso:", placeholder="seu-email@sistema.com", key="txt_cadastro_email")
+        nova_senha = st.text_input("Defina sua Senha Securitária:", type="password", placeholder="Mínimo 6 caracteres", key="txt_cadastro_senha")
+        confirmar_senha = st.text_input("Confirme sua Senha:", type="password", key="txt_cadastro_confirma")
+        
+        # Botão para disparar o cadastro de novo usuário
+        if st.button("Criar My Conta", type="primary", use_container_width=True):
+            if novo_email and nova_senha and confirmar_senha:
+                if nova_senha != confirmar_senha:
+                    st.error("❌ As senhas digitadas não são iguais. Tente novamente.")
+                elif len(nova_senha) < 6:
+                    st.error("❌ Por segurança, a senha deve ter pelo menos 6 caracteres.")
+                else:
+                    with st.spinner("Registrando credenciais na nuvem..."):
+                        try:
+                            resultado_cadastro = mod_calculos.realizar_cadastro_supabase(novo_email, nova_senha)
+                            
+                            if resultado_cadastro.get("status") == "sucesso":
+                                st.success("✅ Conta criada com sucesso! Vá para a aba '🔒 Entrar no Sistema' para fazer login.")
+                            else:
+                                st.error(resultado_cadastro.get("mensagem", "Erro ao cadastrar."))
+                        except Exception as erro_interno:
+                            st.error(f"❌ Erro na execução do código: {erro_interno}")
+            else:
+                st.warning("⚠️ Todos os campos são obrigatórios para realizar o cadastro.")
+
 # =========================================================================
-# 4. FLUXO DE TELAS DA APLICAÇÃO (Condicional Principal)
+# TELA 2: MENU PRINCIPAL E NAVEGAÇÃO
 # =========================================================================
-if st.session_state.logado:
-    # ---------------------------------------------------------------------
-    # CÓDIGO DO SISTEMA (USUÁRIO AUTENTICADO)
-    # ---------------------------------------------------------------------
+else:
     st.sidebar.title("S.Y.S.T.E.M v2.0")
-    st.sidebar.write("👤 Usuário: **William: Administrador**")
+    st.sidebar.write("👤 Usuário: **Administrador Teste**")
     
     opcao_menu = st.sidebar.radio(
         "Selecione uma Tela:",
-        ["🏠 Menu Principal", "📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
+        ["📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
         key="menu_principal"
     )
     
@@ -77,31 +105,20 @@ if st.session_state.logado:
         st.session_state.logado = False
         st.rerun()
 
-    # --- TELA DE BOAS-VINDAS ---
-    if opcao_menu == "🏠 Menu Principal":
-        st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
-        
-        # Uso do .get() evita que quebre se a variável 'usuario_email' ainda não foi instanciada no Supabase
-        email_usuario = st.session_state.get("usuario_email", "William")
-        st.markdown(f"Olá, **{email_usuario}**! O seu cockpit financeiro está totalmente pronto e conectado.")
-        st.write("Utilize a barra de navegação lateral esquerda para acessar as ferramentas de análise, cadastros ou projeções futuras.")
-        
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            st.info("### 📈 Painel Geral\nConsulte saldos consolidados, gráficos por categorias e o extrato detalhado das suas contas.")
-        with col_m2:
-            st.success("### 🔮 Para-brisa Preditivo\nPlaneje o comprometimento do seu salário futuro e agende compras parceladas.")
-
     # --- TELA 1: PAINEL E EXTRATOS ---
-    elif opcao_menu == "📈 Painel e Extratos":
+    if opcao_menu == "📈 Painel e Extratos":
         st.title("Painel Financeiro")
         
+        # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
         with st.spinner("Sincronizando base histórica com a nuvem..."):
+            # CORREÇÃO: Enviamos o st.session_state.usuario_id para o motor!
             df_global = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
             resumo = mod_calculos.calcular_resumo_memoria(df_global)
+
         
+        # Painel fixo do topo
         col1, col2, col3 = st.columns(3)
-        col1.metric(label="Saldo Geral Consolidated", value=f"R$ {resumo['saldo']:,.2f}")
+        col1.metric(label="Saldo Geral Consolidado", value=f"R$ {resumo['saldo']:,.2f}")
         col2.metric(label="Total de Receitas", value=f"R$ {resumo['receitas']:,.2f}")
         col3.metric(label="Total de Despesas", value=f"R$ {resumo['despesas']:,.2f}")
         
@@ -136,6 +153,7 @@ if st.session_state.logado:
             st.write("")
             st.info("💡 **Aguardando Ação:** Por favor, selecione uma conta bancária acima para visualizar o extrato detalhado e o saldo real acumulado.")
         else:
+            # ⚡ Filtros executados estritamente quando o banco está ativo na tela
             df_extrato = mod_calculos.filtrar_extrato_memoria(df_global, st.session_state.mes_atual, st.session_state.ano_atual, banco_selecionado)
             saldo_real_banco = mod_calculos.calcular_saldo_historico_memoria(df_global, st.session_state.mes_atual, st.session_state.ano_atual, banco_selecionado)
             df_grafico = mod_calculos.obter_despesas_por_categoria_memoria(df_extrato)
@@ -149,34 +167,11 @@ if st.session_state.logado:
                 soma_mes = df_extrato['valor'].sum() if not df_extrato.empty else 0.00
                 st.metric(label="Movimentação Líquida do Mês", value=f"R$ {soma_mes:,.2f}")
 
+            # ⚡ Busca o terceiro conjunto de dados (Maiores Produtos do Mês)
             df_produtos_top = mod_calculos.obter_maiores_produtos_mes_memoria(df_extrato)
 
             st.markdown("### 📊 Indicadores Visuais de Desempenho")
-            # Continuará o seu código de gráficos a partir daqui...
-
-else:
-    # ---------------------------------------------------------------------
-    # TELA DE LOGIN (SÓ APARECE SE LOGADO FOR FALSE)
-    # ---------------------------------------------------------------------
-    st.title("🔐 Login - Plataforma S.Y.S.T.E.M")
-    st.write("Por favor, faça a autenticação para acessar seu painel financeiro.")
-    
-    # Substitua as linhas abaixo pela sua conexão real com o Supabase futuramente
-    input_email = st.text_input("E-mail")
-    input_senha = st.text_input("Senha", type="password")
-    
-    if st.button("Entrar no Sistema", use_container_width=True):
-        # Valide com sua função do Supabase aqui. Exemplo de simulação direta:
-        if input_email and input_senha: 
-            st.session_state.logado = True
-            st.session_state.usuario_email = input_email
-            st.session_state.usuario_id = "ID_DO_SUPABASE"  # Insira o ID real vindo do banco
-            st.success("Acesso autorizado!")
-            st.rerun()
-        else:
-            st.error("Por favor, preencha os campos de acesso.")
-
-                                   
+            
             # 🎮 A MÁGICA DA HORIZONTAL: Divide a tela em 3 colunas iguais!
             col_graf1, col_graf2, col_graf3 = st.columns(3)
             
@@ -194,7 +189,7 @@ else:
                         )
                         figura_categoria.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
                         figura_categoria.update_yaxes(categoryorder='total ascending')
-                        st.plotly_chart(figura_produtos, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(figura_categoria, use_container_width=True)
                     except Exception as e:
                         st.error(f"Erro G1: {e}")
 
@@ -214,7 +209,7 @@ else:
                             color_discrete_map={'Receitas': '#2ECC71', 'Despesas': '#E74C3C'}
                         )
                         figura_barras.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
-                        st.plotly_chart(figura_produtos, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(figura_barras, use_container_width=True)
                     except Exception as e:
                         st.error(f"Erro G2: {e}")
 
@@ -236,7 +231,7 @@ else:
                          )
                         figura_produtos.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
                         figura_produtos.update_yaxes(categoryorder='total ascending')
-                        st.plotly_chart(figura_produtos, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(figura_produtos, use_container_width=True)
                     except Exception as e:
                         st.error(f"Erro G3: {e}")
 
@@ -285,7 +280,7 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
+                                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
                 mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
@@ -321,7 +316,7 @@ else:
                         st.rerun()
 
     # --- TELA 2: NOVO LANÇAMENTO ---
-        elif opcao_menu == "📥 Novo Lançamento":
+    elif opcao_menu == "📥 Novo Lançamento":
         # Criamos colunas invisíveis para "espremer" o formulário no centro, simulando um UserForm do VBA!
         col_margem_esq, col_formulario_central, col_margem_dir = st.columns([0.1, 0.8, 0.1])
         
@@ -330,15 +325,15 @@ else:
             st.write("Insira os dados abaixo para registrar uma despesa ou receita em tempo real.")
             
             # Buscas dinâmicas do Supabase
-            # 🟢 CORREÇÃO DE SEGURANÇA NA LINHA 307:
+            # 🟢 CORREÇÃO DE SEGURANÇA: Garante que a lista nasça preenchida se o banco vier vazio
             try:
                 bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
             except TypeError:
-                # Caso a sua função no mod_estruturas ainda não aceite o ID do usuário:
+                # Caso a função não aceite o ID do usuário ainda:
                 bancos_disponiveis = mod_estruturas.buscar_bancos_reais()
-            
-            # Se o usuário for novo e não tiver bancos cadastrados, evita o TypeError entregando a lista:
-            if not bancos_disponiveis or isinstance(bancos_disponiveis, float):
+
+            # Se mesmo assim retornar vazio ou der erro, entregamos a lista padrão salvadora:
+            if not bancos_disponiveis:
                 bancos_disponiveis = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
 
             produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
@@ -384,6 +379,7 @@ else:
                        sucesso_lanc = mod_calculos.registrar_movimentacao_banco(
                        banco_mov, produto_mov, valor_mov, tipo_mov, data_mov, st.session_state.usuario_id
 )
+
                     if sucesso_lanc:
                         st.success(f"🎉 Sucesso! O lançamento de '{produto_mov}' foi gravado no banco '{banco_mov.upper()}'!")
                         st.balloons()
@@ -541,9 +537,11 @@ else:
                                     # Limpa o cache para atualizar as telas imediatamente
                                     st.cache_data.clear()
                                     st.rerun()
+                                    
                                 else:
                                     st.error("Erro técnico ao tentar deletar o banco.")
-    # =========================================================================
+                                        # =========================================================================
+        # =========================================================================
     # TELA 4: ORÇAMENTO PREDITIVO (O PARA-BRISA)
     # =========================================================================
     elif opcao_menu == "🔮 Orçamento Preditivo":
