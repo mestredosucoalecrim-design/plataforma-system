@@ -276,7 +276,7 @@ else:
                 df_editor['created_at'] = df_editor['created_at'].dt.strftime('%Y-%m-%d')
                 df_editor['Selecionar para Exclusão'] = False
                 
-                tabela_viva = st.data_editor(
+                                tabela_viva = st.data_editor(
                     df_editor,
                     width='stretch',
                     hide_index=True,
@@ -284,7 +284,13 @@ else:
                     key="extrato_vico_system",
                     column_config={
                         "id": None, 
-                        "created_at": st.column_config.TextColumn("Data (AAAA-MM-DD)"),
+                        # 🟢 CONFIGURAÇÃO INTERATIVA: Transforma a caixa de texto em um calendário visual!
+                        "created_at": st.column_config.DateColumn(
+                            "Data do Lançamento",
+                            format="DD/MM/YYYY",
+                            min_value=datetime(2020, 1, 1),
+                            max_value=datetime(2030, 12, 31)
+                        ),
                         "banco": st.column_config.TextColumn("Banco/Conta"), 
                         "categoria": st.column_config.TextColumn("Categoria (Automática)"),
                         "nome_produto": st.column_config.TextColumn("Produto/Item"),
@@ -292,6 +298,7 @@ else:
                         "Selecionar para Exclusão": st.column_config.CheckboxColumn("🗑️ Deletar?", default=False)
                     }
                 )
+
                 
                 # Exclusão por botão
                 linhas_para_deletar = tabela_viva[tabela_viva['Selecionar para Exclusão'] == True]
