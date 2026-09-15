@@ -297,8 +297,8 @@ else:
                 )
 
                 
-                # Exclusão por botão
-                linhas_para_deletar = tabela_viva[tabela_viva['Selecionar para Exclusão'] == True]
+            # Exclusão por botão
+            linhas_para_deletar = tabela_viva[tabela_viva['Selecionar para Exclusão'] == True]
                 if not linhas_para_deletar.empty:
                     st.write("")
                     if st.button("🗑️ Excluir Registros Selecionados", type="secondary"):
