@@ -34,7 +34,6 @@ except ModuleNotFoundError:
         st.error(f"❌ O arquivo 'mod_previsoes.py' não foi achado nesta pasta. Arquivos disponíveis: {arquivos_pasta}")
         st.stop()
 
-
 # 1. Configuração de Layout da Página
 st.set_page_config(
     page_title="Plataforma S.Y.S.T.E.M",
@@ -58,7 +57,7 @@ NOME_MESES = [
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO (COM SISTEMA HIDE INTEGRADO)
 # =========================================================================
-else:
+    else:
     st.sidebar.title("S.Y.S.T.E.M v2.0")
     st.sidebar.write("👤 Usuário: **William: Administrador**")
     
