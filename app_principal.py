@@ -288,8 +288,8 @@ else:
                         "created_at": st.column_config.DateColumn(
                             "Data do Lançamento",
                             format="DD/MM/YYYY",
-                            min_value=datetime(2020, 1, 1),
-                            max_value=datetime(2030, 12, 31)
+                            min_value=pd.datetime(2020, 1, 1) if 'datetime' in dir(pd) else None,
+                            max_value=pd.datetime(2030, 12, 31) if 'datetime' in dir(pd) else None
                         ),
                         "banco": st.column_config.TextColumn("Banco/Conta"), 
                         "categoria": st.column_config.TextColumn("Categoria (Automática)"),
