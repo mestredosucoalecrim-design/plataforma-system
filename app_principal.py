@@ -271,7 +271,7 @@ else:
 
             if df_extrato.empty:
                 st.warning(f"⚠️ Nenhum lançamento efetuado no banco '{banco_selecionado.upper()}' neste período.")
-                else:
+            else:
                 df_editor = df_extrato[['id', 'created_at', 'banco', 'categoria', 'nome_produto', 'valor']].copy()
                 
                 # 🟢 CORREÇÃO CRÍTICA: Força a coluna a ser do tipo Data do Python (evita o StreamlitAPIException)
