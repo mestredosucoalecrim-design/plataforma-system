@@ -42,11 +42,6 @@ st.set_page_config(
 )
 
 # 2. Inicialização da Memória de Sessão
-NOME_MESES = [
-    "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-]
-
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "ano_atual" not in st.session_state:
@@ -55,6 +50,10 @@ if "ano_atual" not in st.session_state:
 if "mes_atual" not in st.session_state:
     import datetime
     st.session_state.mes_atual = datetime.date.today().month
+NOME_MESES = [
+    "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+]    
     
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO (COM SISTEMA HIDE INTEGRADO)
