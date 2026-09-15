@@ -41,8 +41,12 @@ st.set_page_config(
     layout="centered"
 )
 
-
 # 2. Inicialização da Memória de Sessão
+NOME_MESES = [
+    "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+]
+
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "ano_atual" not in st.session_state:
@@ -50,15 +54,10 @@ if "ano_atual" not in st.session_state:
 if "mes_atual" not in st.session_state:
     st.session_state.mes_atual = datetime.date.today().month
     
-NOME_MESES = [
-    "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-]
-else:
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO (COM SISTEMA HIDE INTEGRADO)
 # =========================================================================
-#else:
+else:
     st.sidebar.title("S.Y.S.T.E.M v2.0")
     st.sidebar.write("👤 Usuário: **William: Administrador**")
     
