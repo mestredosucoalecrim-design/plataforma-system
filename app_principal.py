@@ -68,7 +68,7 @@ if st.session_state.logado:
     
     opcao_menu = st.sidebar.radio(
         "Selecione uma Tela:",
-        ["🏠 Menu Principal", "📈 Painel e Extratos", "📥Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
+        ["🏠 Menu Principal", "📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
         key="menu_principal"
     )
     
@@ -321,7 +321,7 @@ else:
                         st.rerun()
 
     # --- TELA 2: NOVO LANÇAMENTO ---
-    elif opcao_menu == "📥Novo Lançamento":
+    elif opcao_menu == "📥 Novo Lançamento":
         # Criamos colunas invisíveis para "espremer" o formulário no centro, simulando um UserForm do VBA!
         col_margem_esq, col_formulario_central, col_margem_dir = st.columns([0.1, 0.8, 0.1])
         
