@@ -133,8 +133,8 @@ if opcao_menu == "🏠 Menu Principal":
                     f"💡 **Conselho do Comandante:** Para fechar o mês no azul, reduza o ritmo diário para no máximo **R$ {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
                 )
 
-    # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
-    elif opcao_menu == "📈 Painel e Extratos":
+        # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
+        elif opcao_menu == "📈 Painel e Extratos":
         
         # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
         with st.spinner("Sincronizando base histórica com a nuvem..."):
