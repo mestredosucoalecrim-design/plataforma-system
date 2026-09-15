@@ -313,7 +313,7 @@ else:
                 
             # Edição instantânea (Versão inteligente com ajuste automático de data)
             mudancas = st.session_state.get("extrato_vico_system")
-                if mudancas and mudancas.get("edited_rows"):
+            if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
                     houve_edicao = False
                     for idx_linha, campos_alterados in mudancas["edited_rows"].items():
