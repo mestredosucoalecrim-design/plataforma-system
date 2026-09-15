@@ -50,9 +50,17 @@ NOME_MESES = [
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "ano_atual" not in st.session_state:
+    import datetime
     st.session_state.ano_atual = datetime.date.today().year
 if "mes_atual" not in st.session_state:
+    import datetime
     st.session_state.mes_atual = datetime.date.today().month
+
+if not st.session_state.logado:
+    st.title("Plataforma S.Y.S.T.E.M")
+    st.subheader("Acesso Restrito")
+    
+    aba_login, aba_cadastro = st.tabs(["🔒 Entrar no Sistema", "📝 Criar Nova Conta"])
     
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO (COM SISTEMA HIDE INTEGRADO)
