@@ -310,7 +310,7 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Super Blindada)
+                                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
                 mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
@@ -331,15 +331,14 @@ else:
                             data_curta = str(dt_alvo)[:10].strip()
                             campos_alterados["created_at"] = f"{data_curta}T00:00:00+00:00"
                         
-                        # 🟢 PLANO DE CONTINGÊNCIA: Tenta a sua função padrão. Se ela rejeitar a data, fazemos o update direto!
-                        if not mod_calculos.atualizar_lancamento_banco(id_real, campos_alterados):
-                            try:
-                                import mod_conexao
-                                supabase = mod_conexao.criar_conexao()
-                                # Força a atualização direto no banco para garantir que a data mude
-                                supabase.table("lancamentos").update(campos_alterados).eq("id", id_real).execute()
-                            except Exception as e_direto:
-                                sucesso_global = False
+                        # 🟢 CONEXÃO DIRETA COM O SUPABASE: Atualiza qualquer campo (Data, Produto, Valor) de forma dinâmica
+                        try:
+                            import mod_conexao
+                            supabase = mod_conexao.criar_conexao()
+                            supabase.table("lancamentos").update(campos_alterados).eq("id", id_real).execute()
+                        except Exception as e_direto:
+                            print(f"❌ Erro na gravação direta: {e_direto}")
+                            sucesso_global = False
                                 
                     if houve_edicao and sucesso_global:
                         st.toast("⚡ Banco atualizado com sucesso!", icon="💾")
