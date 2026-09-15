@@ -50,7 +50,7 @@ if "ano_atual" not in st.session_state:
 if "mes_atual" not in st.session_state:
     st.session_state.mes_atual = datetime.date.today().month
     
-    NOME_MESES = [
+NOME_MESES = [
     "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]
