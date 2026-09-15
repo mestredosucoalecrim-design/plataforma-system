@@ -8,10 +8,14 @@ def gerenciar_salario_usuario(id_usuario_logado: str, novo_salario: float) -> bo
     try:
         supabase = mod_conexao.criar_conexao()
         
-        supabase.table("usuario_config").upsert({
-            "usuario_id": id_usuario_logado,
+        # Forçamos a limpeza e conversão dos dados para evitar rejeição do banco
+        dados = {
+            "usuario_id": str(id_usuario_logado).strip(),
             "salario_bruto": float(novo_salario)
-        }).execute()
+        }
+        
+        # Executa o upsert explícito baseado na chave única usuario_id
+        supabase.table("usuario_config").upsert(dados, on_conflict="usuario_id").execute()
         return True
     except Exception as e:
         print(f"❌ Erro ao gerenciar salário: {e}")
@@ -21,14 +25,16 @@ def buscar_salario_usuario(id_usuario_logado: str) -> float:
     """Busca o salário cadastrado do usuário. Se não houver, retorna 0.00."""
     try:
         supabase = mod_conexao.criar_conexao()
-        resposta = supabase.table("usuario_config").select("salario_bruto").eq("usuario_id", id_usuario_logado).execute()
+        resposta = supabase.table("usuario_config").select("salario_bruto").eq("usuario_id", str(id_usuario_logado).strip()).execute()
         
         if resposta.data and len(resposta.data) > 0:
+            # Retorna o valor puro extraído do primeiro registro da lista
             return float(resposta.data[0]["salario_bruto"])
         return 0.00
     except Exception as e:
         print(f"❌ Erro ao buscar salário: {e}")
         return 0.00
+
 
 def gerar_lancamentos_futuros_parcelados(
     descricao: str, 
