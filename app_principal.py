@@ -311,8 +311,8 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                # Edição instantânea (Versão inteligente com ajuste automático de data)
-                mudancas = st.session_state.get("extrato_vico_system")
+            # Edição instantânea (Versão inteligente com ajuste automático de data)
+            mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
                     houve_edicao = False
