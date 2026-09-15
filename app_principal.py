@@ -87,27 +87,54 @@ if not st.session_state.logado:
             else:
                 st.warning("⚠️ Todos os campos são obrigatórios para realizar o cadastro.")
 
-# =========================================================================
-# TELA 2: MENU PRINCIPAL E NAVEGAÇÃO
-# =========================================================================
-else:
-    st.sidebar.title("S.Y.S.T.E.M v2.0")
-    st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
-    
-    opcao_menu = st.sidebar.radio(
-        "Selecione uma Tela:",
-        ["📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
-        key="menu_principal"
-    )
-    
-    st.sidebar.markdown("---")
-    if st.sidebar.button("🚪 Sair do Sistema"):
-        st.session_state.logado = False
-        st.rerun()
+# 🟢 NOVO BLOCO: RENDERIZA O SEU MARCADOR DE COMBUSTÍVEL SE A PRIMEIRA OPÇÃO FOR SELECIONADA
+    if opcao_menu == "🏠 Menu Principal":
+        st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
+        st.markdown(f"Olá, **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
+        
+        st.markdown("---")
+        st.subheader("📊 Marcador de Autonomia Financeira")
+        st.write("Calibre os sensores informando o ciclo do seu recebimento para monitorar seu ritmo de consumo:")
+        
+        # Caixas de entrada para o ciclo dinâmico do dinheiro do William
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            data_ultimo = st.date_input("Data do Último Recebimento:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
+        with col_d2:
+            data_proximo = st.date_input("Data do Próximo Recebimento:", value=pd.Timestamp.now().date() + pd.Timedelta(days=25), key="cal_data_proximo")
+            
+        # Busca o saldo consolidado atual do usuário para o cálculo
+        df_glob_menu = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
+        resumo_menu = mod_calculos.calcular_resumo_memoria(df_glob_menu)
+        saldo_em_bolso = resumo_menu['saldo']
+        
+        # Dispara o motor de cálculo matemático do mod_previsoes
+        dados_autonomia = mod_previsoes.calcular_autonomia_caixa_real(st.session_state.usuario_id, data_ultimo, data_proximo, saldo_em_bolso)
+        
+        if dados_autonomia:
+            st.markdown("### 🧭 Diagnóstico do Manche")
+            
+            c_met1, c_met2, c_met3 = st.columns(3)
+            c_met1.metric(label="Sua Velocidade (Média Diária)", value=f"R$ {dados_autonomia['media_diaria']:,.2f}")
+            c_met2.metric(label="Dias Restantes de Estrada", value=f"{dados_autonomia['dias_restantes']} dias")
+            c_met3.metric(label="Combustível Atual (No Bolso)", value=f"R$ {saldo_em_bolso:,.2f}")
+            
+            st.markdown("---")
+            
+            if dados_autonomia["saldo_livre_estimado"] >= 0:
+                st.success(
+                    f"🟢 **Rota Segura!** Mantendo o ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
+                    f"seu dinheiro chegará ao final do ciclo com uma folga estimada de **R$ {dados_autonomia['saldo_livre_estimado']:,.2f}** no bolso!"
+                )
+            else:
+                st.error(
+                    f"🔴 **Alerta de Pane Seca!** No ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
+                    f"suas despesas estimadas vão superar seu bolso em **R$ {abs(dados_autonomia['saldo_livre_estimado']):,.2f}** antes do próximo recebimento.\n\n"
+                    f"💡 **Conselho do Comandante:** Para fechar o mês no azul, reduza o ritmo diário para no máximo **R$ {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
+                )
 
-    # --- TELA 1: PAINEL E EXTRATOS ---
-    if opcao_menu == "📈 Painel e Extratos":
-        st.title("Painel Financeiro")
+    # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
+    elif opcao_menu == "📈 Painel e Extratos":
         
         # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
         with st.spinner("Sincronizando base histórica com a nuvem..."):
