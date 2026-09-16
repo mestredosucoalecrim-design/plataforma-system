@@ -130,8 +130,8 @@ else:
         # Dispara o motor de cálculo matemático do mod_previsoes
         dados_autonomia = mod_previsoes.calcular_autonomia_caixa_real(st.session_state.usuario_id, data_ultimo, data_proximo, saldo_em_bolso)
         
-            if dados_autonomia:
-            st.markdown("### 🧭 Diagnóstico do Manche")
+        if dados_autonomia:
+        st.markdown("### 🧭 Diagnóstico do Manche")
             
             c_met1, c_met2, c_met3, c_met4 = st.columns(4)
             c_met1.metric(label="Saldo Inicial Livre", value=f"R$ {dados_autonomia['saldo_disponivel_dia_um']:,.2f}")
