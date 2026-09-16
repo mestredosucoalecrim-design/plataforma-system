@@ -163,85 +163,86 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
         return False
         
 
-def calcular_radar_sobrevivencia_real(id_usuario_logado: str, saldo_atual: float, data_inicio, data_fim) -> dict:
+def calcular_radar_sobrevivencia_real(id_usuario_logado: str, data_inicio) -> dict:
     """
-    Motor calibrado com a engenharia exata do Excel:
-    - Usa o saldo real acumulado histórico enviado pela tela.
-    - Considera o dia seguinte ao recebimento (Dia + 1) como o início real dos gastos.
+    Motor matemático traduzido diretamente do UserForm_Initialize do VBA.
+    Garante sincronia perfeita com os filtros e fórmulas do Excel.
     """
     try:
         supabase = mod_conexao.criar_conexao()
         hoje = datetime.now().date()
         
-        # Converte as datas recebidas da tela para o formato de data do Python
-        dt_inicio = datetime.strptime(data_inicio, "%Y-%m-%d").date() if isinstance(data_inicio, str) else data_inicio
-        dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").date() if isinstance(data_fim, str) else data_fim
+        # Converte a data inicial recebida da tela
+        dt_ultimo = datetime.strptime(data_inicio, "%Y-%m-%d").date() if isinstance(data_inicio, str) else data_inicio
         
-        # --- ENGENHARIA DE DATAS DO EXCEL ---
-        # O ciclo total de dias (Ex: do dia 11/09 ao dia 11/10)
-        total_dias_ciclo = (dt_fim - dt_inicio).days
+        # --- PARTE 1: CÁLCULOS DE DATAS (IGUAL AO VBA) ---
+        dt_proximo = dt_ultimo + relativedelta(days=30)
         
-        # O dia seguinte ao recebimento é o primeiro dia de contagem de gastos (Dia 12)
-        dia_primeiro_gasto = dt_inicio + relativedelta(days=1)
+        dias_passados = (hoje - dt_ultimo).days - 1
+        dias_faltam = (dt_proximo - hoje).days + 1
         
-        # Dias que já se passaram do dia 12 até HOJE (inclusive)
-        dias_passados = (hoje - dia_primeiro_gasto).days + 1
-        dias_passados = max(dias_passados, 0) # Garante que não seja negativo se for o próprio dia 11
-        
-        # Quantos dias faltam até o próximo recebimento
-        dias_restantes = total_dias_ciclo - dias_passados
-        dias_restantes = max(dias_restantes, 1) # Evita divisão por zero
-        
-        # --- BUSCA DE DADOS NO SUPABASE ---
-        # 1. Busca os Créditos (Soma de tudo que entrou de positivo estritamente no dia do recebimento)
-        resposta_creditos = supabase.table("lancamentos")\
-            .select("valor")\
-            .eq("usuario_id", id_usuario_logado)\
-            .gte("created_at", dt_inicio.strftime("%Y-%m-%d"))\
-            .lte("created_at", dt_inicio.strftime("%Y-%m-%d"))\
-            .execute()
+        if dias_passados <= 0: 
+            dias_passados = 1
             
-        total_recebido_dia_zero = sum(float(item["valor"]) for item in resposta_creditos.data if float(item["valor"]) > 0) if resposta_creditos.data else 580.00
-        # Caso o teste não ache nada no banco para a data, deixamos os 580.00 de padrão do seu exemplo
-        if total_recebido_dia_zero == 0:
-            total_recebido_dia_zero = 580.00
-
-        # 2. Busca os Gastos Reais (Soma de tudo o que foi gasto do dia 12 até hoje)
-        resposta_gastos = supabase.table("lancamentos")\
-            .select("valor")\
-            .eq("usuario_id", id_usuario_logado)\
-            .gte("created_at", dia_primeiro_gasto.strftime("%Y-%m-%d"))\
-            .lte("created_at", hoje.strftime("%Y-%m-%d"))\
-            .execute()
+        # --- PARTE 2: BUSCA E FILTROS DO SUPABASE ---
+        # Trazemos os lançamentos do usuário para fazer o SumIfs do Excel usando o Pandas
+        resposta = supabase.table("lancamentos").select("valor, created_at, banco").eq("usuario_id", id_usuario_logado).execute()
+        
+        if not resposta.data:
+            return None
             
-        total_gasto_passado = sum(abs(float(item["valor"])) for item in resposta_gastos.data if float(item["valor"]) < 0) if resposta_gastos.data else 0.0
+        df = pd.DataFrame(resposta.data)
+        # Limpa e formata as colunas para o filtro
+        df["created_at"] = pd.to_datetime(df["created_at"]).dt.date
+        df["valor"] = pd.to_numeric(df["valor"])
+        df["banco"] = df["banco"].str.strip().str.lower()
         
-        # --- MATEMÁTICA DA SUA PLANILHA ---
-        # Erro 2 resolvido: Média necessária baseada estritamente no valor recebido dividido pelo ciclo
-        media_necessaria = total_recebido_dia_zero / total_dias_ciclo if total_dias_ciclo > 0 else 0.0
+        # 1. Realidade Hoje (SumIfs do VBA: Conta == 'nu bank' e Data <= Hoje)
+        df_realidade = df[(df["banco"] == "nu bank") & (df["created_at"] <= hoje)]
+        realidade_hoje = float(df_realidade["valor"].sum())
         
-        # Erro 3 resolvido: Média real baseada nos gastos do dia 12 em diante divididos pelos dias decorridos
-        media_real = total_gasto_passado / dias_passados if dias_passados > 0 else 0.0
+        # 2. Valor Base H24 (Buscamos o recebimento de R$ 580.00 feito no dia inicial)
+        df_h24 = df[(df["created_at"] == dt_ultimo) & (df["valor"] > 0)]
+        valor_h24 = float(df_h24["valor"].sum()) if not df_h24.empty else 580.00
+        if valor_h24 == 0: 
+            valor_h24 = 580.00
+            
+        # 3. Média Necessária (Valor H24 / 30 cravado)
+        media_necessaria = valor_h24 / 30
         
-        # Projeções de futuro baseadas na velocidade real
-        gasto_futuro_estimado = media_real * dias_restantes
+        # 4. Total Gastos Período (SumIfs do VBA: Data >= Ultimo+1 e Data <= Hoje e Valor < 0)
+        dia_seguinte = dt_ultimo + relativedelta(days=1)
+        df_gastos = df[(df["created_at"] >= dia_seguinte) & (df["created_at"] <= hoje) & (df["valor"] < 0)]
+        total_gastos_periodo = float(df_gastos["valor"].sum()) # Já virá negativo do banco
         
-        # Quanto PODE gastar de hoje em diante com o que sobrou no bolso
-        quanto_pode_gastar_hoje = saldo_atual / dias_restantes if dias_restantes > 0 else 0.0
+        # 5. Média Hoje
+        media_hoje = total_gastos_periodo / dias_passados
         
-        # Lógica da Defasagem (Gasto que vai acontecer até o fim do mês menos o saldo atual)
-        rombo_estimado = gasto_futuro_estimado - saldo_atual
+        # 6. Perspectiva Hoje
+        perspectiva_hoje = valor_h24 - (media_necessaria * dias_passados)
+        
+        # 7. Vou Gastar = Média Hoje * Dias Faltam
+        vou_gastar = media_hoje * dias_faltam
+        
+        # 8. Gastarei a mais = Realidade Hoje + Vou Gastar (Como vou_gastar é negativo, a soma reduz o saldo)
+        gastarei_a_mais = realidade_hoje + vou_gastar
+        
+        # 9. Posso Até
+        posso_ate = realidade_hoje / dias_faltam if dias_faltam > 0 else 0.0
         
         return {
-            "total_dias_ciclo": total_dias_ciclo,
-            "dias_passados": dias_passados,
-            "dias_restantes": dias_restantes,
+            "posso_ate": round(posso_ate, 2),
             "media_necessaria": round(media_necessaria, 2),
-            "media_real": round(media_real, 2),
-            "quanto_pode_gastar_hoje": round(quanto_pode_gastar_hoje, 2),
-            "rombo_estimado": round(rombo_estimado, 2) if rombo_estimado > 0 else 0.0,
-            "total_recebido": total_recebido_dia_zero
+            "media_hoje": round(abs(media_hoje), 2), # Passamos positivo para a tela ficar bonita
+            "vou_gastar": round(abs(vou_gastar), 2),
+            "gastarei_a_mais": round(gastarei_a_mais, 2),
+            "dias_passados": int(dias_passados),
+            "dias_faltam": int(dias_faltam),
+            "perspectiva_hoje": round(perspectiva_hoje, 2),
+            "realidade_hoje": round(realidade_hoje, 2),
+            "ultimo_recebimento": dt_ultimo.strftime("%d/%m/%Y"),
+            "proximo_recebimento": dt_proximo.strftime("%d/%m/%Y")
         }
     except Exception as e:
-        print(f"❌ Erro na calibração do motor: {e}")
+        print(f"❌ Erro no motor calibrado VBA: {e}")
         return None

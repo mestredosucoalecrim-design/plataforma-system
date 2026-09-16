@@ -118,75 +118,76 @@ else:
         st.session_state.logado = False
         st.rerun()
 
-        # 🟢 BLOCO COCKPIT: RADAR FINANCEIRO ALINHADO COM O EXCEL
+        # 🟢 BLOCO COCKPIT: PAINEL DE CONTROLE DIÁRIO (VBA SYNCED)
     if opcao_menu == "🏠 Menu Principal":
-        st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.EM")
+        st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
         st.markdown(f"Olá, Comandante **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
         
         st.markdown("---")
-        st.subheader("📊 Marcador de Autonomia Financeira")
+        st.subheader("🔮 Painel de Controle Diário (Radar de Consumo)")
         
-        # Caixas de entrada para o ciclo dinâmico das suas faturas/recebimentos
-        col_d1, col_d2 = st.columns(2)
-        with col_d1:
-            data_ultimo = st.date_input("Data do Último Recebimento (Dia 0):", value=pd.Timestamp.now().date() - pd.Timedelta(days=4), key="cal_data_ultimo")
-        with col_d2:
-            data_proximo = st.date_input("Data do Próximo Recebimento:", value=pd.Timestamp.now().date() + pd.Timedelta(days=26), key="cal_data_proximo")
-            
-        # [RESOLUÇÃO ERRO 1]: Puxa o saldo real definitivo somado de todo o histórico desde 2014
-        df_glob_menu = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
-        resumo_menu = mod_calculos.calcular_resumo_memoria(df_glob_menu)
-        saldo_real_historico = resumo_menu['saldo']
+        # Apenas uma caixa de entrada, exatamente como a célula J15 do seu gerenciador Excel
+        data_ultimo = st.date_input("Data do Último Recebimento (Célula J15):", value=pd.Timestamp.now().date() - pd.Timedelta(days=4), key="cal_data_ultimo")
         
-        # Dispara o motor recalibrado passando as datas e o saldo real histórico
-        with st.spinner("Calibrando sensores com o banco de dados..."):
-            dados_autonomia = mod_previsoes.calcular_radar_sobrevivencia_real(
-                st.session_state.usuario_id, 
-                saldo_real_historico,
-                data_ultimo,
-                data_proximo
-            )
+        # Dispara o motor enviando a data informada
+        with st.spinner("Conectando ao banco de dados Nu Bank..."):
+            dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo)
         
-        if dados_autonomia:
-            st.markdown("### 🧭 Diagnóstico do Manche")
+        if dados:
+            st.markdown("### 🧭 Indicadores Operacionais")
             
-            # Painel com os nomes exatos das suas colunas do Excel
-            c_met1, c_met2, c_met3 = st.columns(3)
+            # Linha 1: Prazos e Calendário
+            c_dt1, c_dt2, c_dt3, c_dt4 = st.columns(4)
+            c_dt1.metric(label="🗓️ Último Recebimento", value=dados["ultimo_recebimento"])
+            c_dt2.metric(label="⏱️ Dias se Passaram", value=f"{dados['dias_passados']} Dias")
+            c_dt3.metric(label="🗓️ Próximo Recebimento", value=dados["proximo_recebimento"])
+            c_dt4.metric(label="⏳ Dias que Faltam", value=f"{dados['dias_faltam']} Dias")
             
-            with c_met1:
-                st.metric(label="🏦 Realidade (Saldo Atual)", value=f"R$ {saldo_real_historico:,.2f}")
-                st.caption(f"Valor identificado no dia do ciclo: **R$ {dados_autonomia['total_recebido']:,.2f}**")
-            
-            with c_met2:
-                st.metric(label="🎯 Média Necessária", value=f"R$ {dados_autonomia['media_necessaria']:,.2f}/dia")
-                st.caption(f"Dias passados: **{dados_autonomia['dias_passados']}** | Faltam: **{dados_autonomia['dias_restantes']} dias**")
-                
-            with c_met3:
-                # Mostra o delta comparando com a sua planilha
-                diferenca = dados_autonomia['media_real'] - dados_autonomia['media_necessaria']
-                if diferenca > 0:
-                    st.metric(label="🚏 Média Hoje", value=f"R$ {dados_autonomia['media_real']:,.2f}/dia", delta=f"+R$ {diferenca:,.2f} ACIMA DA META", delta_color="inverse")
-                else:
-                    st.metric(label="🚏 Média Hoje", value=f"R$ {dados_autonomia['media_real']:,.2f}/dia", delta=f"R$ {abs(diferenca):,.2f} SOB CONTROLE", delta_color="normal")
-                    
             st.markdown("---")
             
-            # Campo de recalibragem da rota do combustível (O seu "Posso até")
-            st.info(f"🔄 **Posso até gastar:** R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f} por dia de hoje em diante para equilibrar o tanque.")
+            # Linha 2: Diagnóstico de Caixa (Nu Bank focado)
+            c_val1, c_val2, c_val3 = st.columns(3)
+            with c_val1:
+                # Sua label Roxa do VBA (Realidade Hoje)
+                st.metric(label="💜 Realidade Hoje (Nu Bank)", value=f"R$ {dados['realidade_hoje']:,.2f}")
+                st.caption(f"Perspectiva teórica esperada: **R$ {dados['perspectiva_hoje']:,.2f}**")
+                
+            with c_val2:
+                st.metric(label="🎯 Média Necessária (Teto)", value=f"R$ {dados['media_necessaria']:,.2f}/dia")
+                st.caption("Meta calculada sobre a base H24")
+                
+            with c_val3:
+                # Sua label Vermelha do VBA (Média Hoje)
+                # Compara a velocidade real com a necessária para gerar o Delta
+                diff = dados['media_hoje'] - dados['media_necessaria']
+                st.metric(
+                    label="🚨 Média Hoje (Velocidade)", 
+                    value=f"R$ {dados['media_hoje']:,.2f}/dia",
+                    delta=f"+R$ {diff:,.2f} ACIMA DA META" if diff > 0 else f"-R$ {abs(diff):,.2f} ABAIXO DA META",
+                    delta_color="inverse" if diff > 0 else "normal"
+                )
             
-            # O Puxão de orelha idêntico à sua tabela
-            if dados_autonomia["rombo_estimado"] > 0:
-                gasto_futuro_total = dados_autonomia['media_real'] * dados_autonomia['dias_restantes']
+            st.markdown("---")
+            
+            # Linha 3: Projeção de Fim de Mês e Tomada de Decisão
+            st.info(f"🔄 **Posso até gastar:** R$ {dados['posso_ate']:,.2f} por dia de hoje em diante para o saldo não zerar.")
+            st.warning(f"📉 **Projeção de Consumo:** Se mantiver o ritmo, você gastará um total de **R$ {dados['vou_gastar']:,.2f}** nos próximos {dados['dias_faltam']} dias.")
+            
+            # Tratamento da cor do "Gastarei a mais" (Parte 4 do seu VBA)
+            # Se gastarei_a_mais for menor que 0, significa que o saldo final ficará negativo (rombo)
+            if dados["gastarei_a_mais"] < 0:
                 st.error(
-                    f"🔴 **⚠️ PUXÃO DE ORELHA FINANCEIRO:**\n\n"
-                    f"Se você continuar assim, vai gastar **R$ {gasto_futuro_total:,.2f}** até o final do mês.\n\n"
-                    f"Como o seu saldo real é de **R$ {saldo_real_historico:,.2f}**, você gastará mais **R$ {dados_autonomia['rombo_estimado']:,.2f}** do que tem em conta!\n\n"
-                    f"🚨 **Ação Corretiva:** Regule o consumo diário para no máximo **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}/dia**."
+                    f"🔴 **Alerta de Rombo Orçamentário:**\n\n"
+                    f"Sua projeção ultrapassará o saldo disponível. Seu saldo final estimado em conta será de **R$ {dados['gastarei_a_mais']:,.2f}**.\n\n"
+                    f"💡 **Ação Corretiva:** Puxe o freio urgente! Reduza seus gastos para o teto de **R$ {dados['posso_ate']:.2f}/dia**."
                 )
             else:
-                st.success("🟢 **Rota Segura!** No ritmo atual, a perspectiva aponta que seu saldo fechará o mês protegido.")
+                st.success(
+                    f"🟢 **Orçamento Seguro:**\n\n"
+                    f"Mantendo esse ritmo, você terminará o ciclo com um saldo positivo de **R$ {dados['gastarei_a_mais']:,.2f}** no bolso!"
+                )
         else:
-            st.warning("📋 Não foi possível realizar o cálculo. Verifique seus lançamentos na tabela.")
+            st.warning("📋 Dados insuficientes na conta Nu Bank para este período de teste.")
 
 
     # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
