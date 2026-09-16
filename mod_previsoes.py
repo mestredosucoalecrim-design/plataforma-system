@@ -161,6 +161,7 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
     except Exception as e:
         print(f"❌ Erro ao excluir parcela futura: {e}")
         return False
+        
 
 def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
     """Busca cirúrgica na tabela orcamento_previsto para diagnosticar o retorno baleado."""
@@ -182,120 +183,75 @@ def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
     except Exception as e:
         # Se o banco rejeitar por qualquer motivo estrutural, o Python vai cuspir o erro aqui
         return [{"ERRO_CRITICO": str(e)}]
+
+
 def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_proximo_rec, saldo_atual: float) -> dict:
     """
-    Calcula a média diária real de gastos passados a partir do último recebimento
-    e projeta a autonomia do saldo atual até o próximo recebimento.
+    Calcula a autonomia e o rombo de caixa baseado estritamente na regra de 
+    saldo inicial livre do William (Média Necessária fixa vs Média Real diária).
     """
     try:
-        from datetime import datetime
+        from datetime import datetime, timedelta
         supabase = mod_conexao.criar_conexao()
         
-        # 1. Garante que as datas estejam no formato correto de objeto date
+        # 1. Alinha as datas do calendário
         dt_ultimo = datetime.strptime(str(data_ultimo_rec), "%Y-%m-%d").date() if isinstance(data_ultimo_rec, str) else data_ultimo_rec
         dt_proximo = datetime.strptime(str(data_proximo_rec), "%Y-%m-%d").date() if isinstance(data_proximo_rec, str) else data_proximo_rec
         dt_hoje = datetime.now().date()
         
-        # 2. Calcula as janelas de dias (Calendário puro)
+        # O ciclo de gastos começa rigorosamente no Dia 1 (um dia após o recebimento)
+        dt_dia_um = dt_ultimo + timedelta(days=1)
+        
+        # 2. Dias do Ciclo
+        total_dias_ciclo = (dt_proximo - dt_ultimo).days
+        if total_dias_ciclo <= 0: total_dias_ciclo = 30
+        
         dias_passados = (dt_hoje - dt_ultimo).days
-        if dias_passados <= 0: 
-            dias_passados = 1 # Evita divisão por zero se o dinheiro entrou hoje
-            
+        if dias_passados <= 0: dias_passados = 1
+        
         dias_restantes = (dt_proximo - dt_hoje).days
-        if dias_restantes < 0: 
-            dias_restantes = 0 # Caso já tenha passado da data prevista
-            
-        # 3. Busca e soma os gastos reais do usuário estritamente DESDE o último recebimento até HOJE
-        # Filtramos valores negativos (despesas)
-        resposta = supabase.table("lancamentos")\
-            .select("valor")\
+        if dias_restantes < 0: dias_restantes = 0
+        
+        # 3. Busca de despesas reais feitas exclusivamente DESDE o Dia 1 (dia seguinte ao recebimento) até hoje
+        resposta_gastos = supabase.table("lancamentos")\
+            .select("valor, created_at")\
             .eq("usuario_id", id_usuario_logado)\
-            .gte("created_at", dt_ultimo.strftime("%Y-%m-%dT00:00:00+00:00"))\
-            .lte("created_at", dt_hoje.strftime("%Y-%m-%dT23:59:59+00:00"))\
             .lt("valor", 0)\
+            .gte("created_at", dt_dia_um.strftime("%Y-%m-%dT00:00:00+00:00"))\
+            .lte("created_at", dt_hoje.strftime("%Y-%m-%dT23:59:59+00:00"))\
             .execute()
             
-        total_gasto_periodo = 0.0
-        if resposta.data:
-            total_gasto_periodo = sum(abs(float(item["valor"])) for item in resposta.data)
+        total_gasto_passado = 0.0
+        if resposta_gastos.data:
+            total_gasto_passado = sum(abs(float(item["valor"])) for item in resposta_gastos.data)
             
-        # 4. Calcula a média real diária consumida
-        media_diaria = total_gasto_periodo / dias_passados
+        # 4. Reconstrói o Saldo do Dia 1 (Saldo que ela tinha na manhã do dia 12)
+        saldo_disponivel_dia_um = saldo_atual + total_gasto_passado
         
-        # 5. Projeta o consumo necessário para o futuro
-        gasto_estimado_futuro = media_diaria * dias_restantes
-        saldo_livre_estimado = saldo_atual - gasto_estimado_futuro
+        # 5. Média Necessária Fixa (Saldo do Dia 1 dividido pelo ciclo total de 30 dias)
+        media_necessaria = saldo_disponivel_dia_um / total_dias_ciclo if total_dias_ciclo > 0 else 0.0
         
-        # Média ideal para o dinheiro durar exatamente até o alvo com folga zero
-        media_ideal = saldo_atual / dias_restantes if dias_restantes > 0 else 0.0
+        # 6. Média Real (Quanto ela vem gastando de verdade por dia desde o dia 12)
+        media_real = total_gasto_passado / dias_passados if dias_passados > 0 else 0.0
+        
+        # 7. Gasto Futuro Projetado baseado na velocidade real
+        gasto_futuro_estimado = media_real * dias_restantes
+        
+        # 8. Quanto ela PODE gastar por dia de hoje em diante para não quebrar (Saldo atual / dias restantes)
+        quanto_pode_gastar_hoje = saldo_atual / dias_restantes if dias_restantes > 0 else 0.0
+        
+        # Lógica do Defasagem Financeira (O Puxão de Orelha)
+        # Se o que ela vai gastar no futuro (gasto_futuro) for maior do que ela tem no bolso hoje (saldo_atual)
+        rombo_estimado = gasto_futuro_estimado - saldo_atual
         
         return {
-            "dias_passados": dias_passados,
             "dias_restantes": dias_restantes,
-            "total_gasto_periodo": total_gasto_periodo,
-            "media_diaria": media_diaria,
-            "gasto_estimado_futuro": gasto_estimado_futuro,
-            "saldo_livre_estimado": saldo_livre_estimado,
-            "media_ideal": media_ideal
+            "media_necessaria": media_necessaria,
+            "media_real": media_real,
+            "quanto_pode_gastar_hoje": quanto_pode_gastar_hoje,
+            "rombo_estimado": round(rombo_estimado, 2) if rombo_estimado > 0 else 0.0,
+            "saldo_disponivel_dia_um": saldo_disponivel_dia_um
         }
     except Exception as e:
-        print(f"❌ Erro no cálculo de autonomia: {e}")
-        return None
-def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_proximo_rec, saldo_atual: float) -> dict:
-    """
-    Calcula a média diária real de gastos passados a partir do último recebimento
-    e projeta a autonomia do saldo atual até o próximo recebimento.
-    """
-    try:
-        from datetime import datetime
-        supabase = mod_conexao.criar_conexao()
-        
-        # 1. Garante que as datas estejam no formato correto de objeto date
-        dt_ultimo = datetime.strptime(str(data_ultimo_rec), "%Y-%m-%d").date() if isinstance(data_ultimo_rec, str) else data_ultimo_rec
-        dt_proximo = datetime.strptime(str(data_proximo_rec), "%Y-%m-%d").date() if isinstance(data_proximo_rec, str) else data_proximo_rec
-        dt_hoje = datetime.now().date()
-        
-        # 2. Calcula as janelas de dias (Calendário puro)
-        dias_passados = (dt_hoje - dt_ultimo).days
-        if dias_passados <= 0: 
-            dias_passados = 1 # Evita divisão por zero se o dinheiro entrou hoje
-            
-        dias_restantes = (dt_proximo - dt_hoje).days
-        if dias_restantes < 0: 
-            dias_restantes = 0 # Caso já tenha passado da data prevista
-            
-        # 3. Busca e soma os gastos reais do usuário estritamente DESDE o último recebimento até HOJE
-        resposta = supabase.table("lancamentos")\
-            .select("valor")\
-            .eq("usuario_id", id_usuario_logado)\
-            .gte("created_at", dt_ultimo.strftime("%Y-%m-%dT00:00:00+00:00"))\
-            .lte("created_at", dt_hoje.strftime("%Y-%m-%dT23:59:59+00:00"))\
-            .lt("valor", 0)\
-            .execute()
-            
-        total_gasto_periodo = 0.0
-        if resposta.data:
-            total_gasto_periodo = sum(abs(float(item["valor"])) for item in resposta.data)
-            
-        # 4. Calcula a média real diária consumida
-        media_diaria = total_gasto_periodo / dias_passados
-        
-        # 5. Projeta o consumo necessário para o futuro
-        gasto_estimado_futuro = media_diaria * dias_restantes
-        saldo_livre_estimado = saldo_atual - gasto_estimado_futuro
-        
-        # Média ideal para o dinheiro durar exatamente até o alvo com folga zero
-        media_ideal = saldo_atual / dias_restantes if dias_restantes > 0 else 0.0
-        
-        return {
-            "dias_passados": dias_passados,
-            "dias_restantes": dias_restantes,
-            "total_gasto_periodo": total_gasto_periodo,
-            "media_diaria": media_diaria,
-            "gasto_estimado_futuro": gasto_estimado_futuro,
-            "saldo_livre_estimado": saldo_livre_estimado,
-            "media_ideal": media_ideal
-        }
-    except Exception as e:
-        print(f"❌ Erro no cálculo de autonomia: {e}")
+        print(f"❌ Erro na calibração do motor: {e}")
         return None

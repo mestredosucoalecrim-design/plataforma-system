@@ -6,6 +6,18 @@ import mod_estruturas
 import mod_previsoes
 import pandas as pd
 
+# Injeta um estilo CSS para esconder o menu do topo e o botão de visualização
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # 1. Configuração de Layout da Página
 st.set_page_config(
     page_title="Plataforma S.Y.S.T.E.M",
@@ -133,24 +145,30 @@ else:
         if dados_autonomia:
             st.markdown("### 🧭 Diagnóstico do Manche")
             
-            c_met1, c_met2, c_met3 = st.columns(3)
-            c_met1.metric(label="Sua Velocidade (Média Diária)", value=f"R$ {dados_autonomia['media_diaria']:,.2f}")
-            c_met2.metric(label="Dias Restantes de Estrada", value=f"{dados_autonomia['dias_restantes']} dias")
-            c_met3.metric(label="Combustível Atual (No Bolso)", value=f"R$ {saldo_em_bolso:,.2f}")
+            c_met1, c_met2, c_met3, c_met4 = st.columns(4)
+            c_met1.metric(label="Saldo Inicial Livre", value=f"R$ {dados_autonomia['saldo_disponivel_dia_um']:,.2f}")
+            c_met2.metric(label="Média Necessária (Teto)", value=f"R$ {dados_autonomia['media_necessaria']:,.2f}/dia")
+            c_met3.metric(label="Sua Média Real", value=f"R$ {dados_autonomia['media_real']:,.2f}/dia")
+            c_met4.metric(label="Quanto PODE gastar/dia", value=f"R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}")
             
             st.markdown("---")
             
-            if dados_autonomia["saldo_livre_estimado"] >= 0:
+            if dados_autonomia["rombo_estimado"] == 0:
                 st.success(
-                    f"🟢 **Rota Segura!** Mantendo o ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
-                    f"seu dinheiro chegará ao final do ciclo com uma folga estimada de **R$ {dados_autonomia['saldo_livre_estimado']:,.2f}** no bolso!"
+                    f"🟢 **Rota Segura!** Seu ritmo de gastos real está dentro do limite. "
+                    f"Você pode gastar até **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f} por dia** para chegar ao final do ciclo com total folga!"
                 )
             else:
+                # 🔴 O SEU PUXÃO DE ORELHA PERSONALIZADO E MATEMÁTICO:
                 st.error(
-                    f"🔴 **Alerta de Pane Seca!** No ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
-                    f"suas despesas estimadas vão superar seu bolso em **R$ {abs(dados_autonomia['saldo_livre_estimado']):,.2f}** antes do próximo recebimento.\n\n"
-                    f"💡 **Conselho do Comandante:** Para fechar o mês no azul, reduza o ritmo diário para no máximo **R$ {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
+                    f"🔴 **⚠️ PUXÃO DE ORELHA FINANCEIRO:**\n\n"
+                    f"**Se você continuar gastando R$ {dados_autonomia['media_real']:,.2f} por dia dessa forma, "
+                    f"suas despesas vão demandar R$ {dados_autonomia['media_real']*dados_autonomia['dias_restantes']:,.2f} até o fim do mês. "
+                    f"De onde você vai tirar esse dinheiro se o seu saldo atual é de apenas R$ {saldo_em_bolso:,.2f}? "
+                    f"Você terá um rombo estimado de R$ {dados_autonomia['rombo_estimado']:,.2f} antes do próximo recebimento!**\n\n"
+                    f"💡 **Ação Imediata:** Reduza o ritmo diário urgentemente para no máximo **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}/dia** para o tanque durar!"
                 )
+
 
     # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
     elif opcao_menu == "📈 Painel e Extratos":
@@ -328,7 +346,7 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
+                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
                 mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
@@ -436,7 +454,7 @@ else:
                         st.error("❌ Falha técnica ao salvar o lançamento no servidor.")
 
 
-        # --- TELA 3: CADASTROS BÁSICOS ---
+    # --- TELA 3: CADASTROS BÁSICOS ---
     elif opcao_menu == "⚙️ Cadastros Básicos":
         st.title("⚙️ Configurações de Estrutura")
         st.write("Gerencie os parâmetros operacionais da sua plataforma de forma simples.")
@@ -534,11 +552,17 @@ else:
                 # 2. ABA DE BANCOS (Estrutura blindada e alinhada)
         with tab_bancos:
             st.subheader("🏦 Gerenciar Bancos")
-            lista_bancos_reais = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
+            
+            # [CORREÇÃO 3]: Buscas dinâmicas trazidas para o topo para que os dados existam antes de serem exibidos
+            lista_bancos_reais = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
+            produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
             
             st.write("Seus bancos ativos para lançamentos:")
-            for b in lista_bancos_reais:
-                st.write(f"- {b}")
+            if not lista_bancos_reais:
+                st.info("Nenhum banco cadastrado para o seu usuário.")
+            else:
+                for b in lista_bancos_reais:
+                    st.write(f"- {b.upper()}")
             
             st.markdown("---")
             st.subheader("➕ Adicionar Novo Banco")
@@ -550,22 +574,25 @@ else:
                 else:
                     with st.spinner("Conectando com o servidor Supabase..."):
                         try:
-                            st.success(f"🏦 Conta do '{novo_banco_nome}' adicionada com sucesso!")
-                            st.cache_data.clear()
-                            st.rerun()
+                            # [CORREÇÃO 1]: Reintroduzida a chamada que grava de verdade no Supabase!
+                            resultado_banco = mod_estruturas.cadastrar_novo_banco_real(novo_banco_nome, st.session_state.usuario_id)
+                            
+                            if resultado_banco == "sucesso":
+                                st.success(f"🏦 Conta do '{novo_banco_nome}' adicionada com sucesso!")
+                                st.cache_data.clear()
+                                st.rerun()
+                            elif resultado_banco == "duplicado":
+                                st.warning("⚠️ Este banco já está cadastrado.")
+                            else:
+                                st.error(f"❌ Erro ao salvar banco: {resultado_banco}")
+                                
                         except Exception as e_banco:
-                            st.error(f"Erro ao salvar banco: {e_banco}")
+                            st.error(f"Erro técnico ao salvar banco: {e_banco}")
                         
             st.markdown("---")
             st.write("📋 **Contas Operacionais Ativas na Nuvem:**")
             
-            # Buscas dinâmicas do Supabase
-            bancos_disponiveis = mod_estruturas.buscar_bancos_reais(st.session_state.usuario_id)
-            produtos_disponiveis = mod_estruturas.buscar_produtos_unicos(st.session_state.usuario_id)
-            
-            # Garante que a lista exista na memória, mesmo se o usuário for novo e não tiver dados cadastrados
-            lista_bancos_reais = []
-
+            # [CORREÇÃO 2]: Removida a linha que limpava a lista (lista_bancos_reais = [])
             if not lista_bancos_reais:
                 st.info("Nenhum banco cadastrado na tabela física do Supabase.")
             else:
@@ -577,19 +604,17 @@ else:
                         else:
                             st.markdown(f"🏛️ • **{b.upper()}** *(Conta Corrente / Investimento)*")
                     with col_btn:
-                        # Criamos chaves exclusivas para o Streamlit não duplicar os botões de lixeira
                         if st.button("🗑️", key=f"btn_deletar_banco_{b}", help=f"Excluir definitivamente a conta {b.upper()}"):
                             with st.spinner("Removendo do Supabase..."):
                                 if mod_estruturas.deletar_banco_real(b):
                                     st.toast(f"⚡ Conta {b.upper()} eliminada com sucesso!", icon="🗑️")
-                                    # Limpa o cache para atualizar as telas imediatamente
                                     st.cache_data.clear()
                                     st.rerun()
-                                    
                                 else:
                                     st.error("Erro técnico ao tentar deletar o banco.")
-                                        # =========================================================================
-        # =========================================================================
+
+                                        
+    # =========================================================================
     # TELA 4: ORÇAMENTO PREDITIVO (O PARA-BRISA)
     # =========================================================================
     elif opcao_menu == "🔮 Orçamento Preditivo":
@@ -656,7 +681,7 @@ else:
                 else:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
-                        # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
+        # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
         with tab_visualizar:
             st.subheader("🗓️ Gestão e Projeção do Orçamento")
             st.write("Abaixo estão suas contas futuras. Marque a caixinha 'Baixar' para pagá-la ou 'Excluir' para deletar a projeção.")

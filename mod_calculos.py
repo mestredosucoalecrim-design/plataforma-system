@@ -155,7 +155,17 @@ def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario
     except Exception as e:
         print(f"❌ Erro ao cadastrar produto: {e}")
         return False
-
+            
+        # 2. Insere SEM passar o campo "id" (O Supabase vai gerar o ID sozinho)
+        supabase.table("produtos").insert({
+            "nome_produto": prod_limpo,
+            "categoria_id": int(id_categoria),
+            "usuario_id": id_usuario_logado
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"Erro ao cadastrar produto: {e}")
+        return False
 
 def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
     """Grava o novo lançamento deixando o ID autoincremento por conta do Supabase."""
@@ -215,6 +225,6 @@ def realizar_cadastro_supabase(email_usuario: str, senha_usuario: str) -> dict:
             return {"status": "sucesso", "mensagem": "Conta criada com sucesso!"}
         return {"status": "erro", "mensagem": "Não foi possível processar o cadastro."}
     except Exception as e:
-        print(f"❌ Erro ao cadastrar produto: {e}")
-        # Em vez de retornar False, vamos retornar a mensagem do erro real!
-        return str(e)
+        if "already registered" in str(e).lower() or "already exists" in str(e).lower():
+            return {"status": "erro", "mensagem": "⚠️ Este e-mail já está cadastrado no sistema!"}
+        return {"status": "erro", "mensagem": f"❌ Falha de comunicação: {e}"}
