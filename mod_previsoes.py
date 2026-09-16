@@ -220,7 +220,13 @@ def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_
             
         total_gasto_periodo = 0.0
         if resposta.data:
-            total_gasto_periodo = sum(abs(float(item["valor"])) for item in resposta.data)
+            for item in resposta.data:
+                # Extrai apenas os 10 primeiros caracteres da data do lançamento (AAAA-MM-DD)
+                data_lancado_curta = item["created_at"][:10]
+                
+                # Se o gasto aconteceu ENTRE a data do último recebimento e HOJE, entra na soma!
+                if dt_ultimo.strftime("%Y-%m-%d") <= data_lancado_curta <= dt_hoje.strftime("%Y-%m-%d"):
+                    total_gasto_periodo += abs(float(item["valor"]))
             
         # 4. Calcula a média real diária consumida
         media_diaria = total_gasto_periodo / dias_passados
