@@ -130,27 +130,33 @@ else:
         # Dispara o motor de cálculo matemático do mod_previsoes
         dados_autonomia = mod_previsoes.calcular_autonomia_caixa_real(st.session_state.usuario_id, data_ultimo, data_proximo, saldo_em_bolso)
         
-        if dados_autonomia:
-            st.markdown("### 🧭 Diagnóstico")
+                if dados_autonomia:
+            st.markdown("### 🧭 Diagnóstico do Manche")
             
-            c_met1, c_met2, c_met3 = st.columns(3)
-            c_met1.metric(label="Sua Média (Média Diária)", value=f" {dados_autonomia['media_diaria']:,.2f}")
-            c_met2.metric(label="Dias Restantes", value=f"{dados_autonomia['dias_restantes']} dias")
-            c_met3.metric(label="Saldo Atual (No Bolso)", value=f" {saldo_em_bolso:,.2f}")
+            c_met1, c_met2, c_met3, c_met4 = st.columns(4)
+            c_met1.metric(label="Saldo Inicial Livre", value=f"R$ {dados_autonomia['saldo_disponivel_dia_um']:,.2f}")
+            c_met2.metric(label="Média Necessária (Teto)", value=f"R$ {dados_autonomia['media_necessaria']:,.2f}/dia")
+            c_met3.metric(label="Sua Média Real", value=f"R$ {dados_autonomia['media_real']:,.2f}/dia")
+            c_met4.metric(label="Quanto PODE gastar/dia", value=f"R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}")
             
             st.markdown("---")
             
-            if dados_autonomia["saldo_livre_estimado"] >= 0:
+            if dados_autonomia["rombo_estimado"] == 0:
                 st.success(
-                    f"🟢 **Rota Segura!** Mantendo o ritmo atual de {dados_autonomia['media_diaria']:,.2f}/dia**, "
-                    f"seu dinheiro chegará ao final do ciclo com uma folga estimada de {dados_autonomia['saldo_livre_estimado']:,.2f}** no bolso!"
+                    f"🟢 **Rota Segura!** Seu ritmo de gastos real está dentro do limite. "
+                    f"Você pode gastar até **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f} por dia** para chegar ao final do ciclo com total folga!"
                 )
             else:
+                # 🔴 O SEU PUXÃO DE ORELHA PERSONALIZADO E MATEMÁTICO:
                 st.error(
-                    f"🔴 **Alerta de Pane Seca!** No ritmo atual de {dados_autonomia['media_diaria']:,.2f}/dia**, "
-                    f"suas despesas estimadas vão superar seu bolso em {abs(dados_autonomia['saldo_livre_estimado']):,.2f}** antes do próximo recebimento.\n\n"
-                    f"💡 **Conselho:** Para fechar o mês no azul, reduza o ritmo diário para no máximo {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
+                    f"🔴 **⚠️ PUXÃO DE ORELHA FINANCEIRO:**\n\n"
+                    f"**Se você continuar gastando R$ {dados_autonomia['media_real']:,.2f} por dia dessa forma, "
+                    f"suas despesas vão demandar R$ {dados_autonomia['media_real']*dados_autonomia['dias_restantes']:,.2f} até o fim do mês. "
+                    f"De onde você vai tirar esse dinheiro se o seu saldo atual é de apenas R$ {saldo_em_bolso:,.2f}? "
+                    f"Você terá um rombo estimado de R$ {dados_autonomia['rombo_estimado']:,.2f} antes do próximo recebimento!**\n\n"
+                    f"💡 **Ação Imediata:** Reduza o ritmo diário urgentemente para no máximo **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}/dia** para o tanque durar!"
                 )
+
 
     # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
     elif opcao_menu == "📈 Painel e Extratos":
