@@ -187,8 +187,8 @@ def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
 
 def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_proximo_rec, saldo_atual: float) -> dict:
     """
-    Calcula a autonomia real do William baseado no saldo atualizado 
-    e no ritmo de despesas diárias desde o dia seguinte ao último recebimento.
+    Calcula a autonomia e o rombo de caixa baseado estritamente na regra de 
+    saldo inicial livre do William (Média Necessária fixa vs Média Real diária).
     """
     try:
         from datetime import datetime, timedelta
@@ -199,10 +199,10 @@ def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_
         dt_proximo = datetime.strptime(str(data_proximo_rec), "%Y-%m-%d").date() if isinstance(data_proximo_rec, str) else data_proximo_rec
         dt_hoje = datetime.now().date()
         
-        # O gasto real começa um dia APÓS o recebimento (Dia 12/09)
-        dt_inicio_gasto = dt_ultimo + timedelta(days=1)
+        # O ciclo de gastos começa rigorosamente no Dia 1 (um dia após o recebimento)
+        dt_dia_um = dt_ultimo + timedelta(days=1)
         
-        # 2. Janela do Ciclo Total e Dias Passados/Restantes
+        # 2. Dias do Ciclo
         total_dias_ciclo = (dt_proximo - dt_ultimo).days
         if total_dias_ciclo <= 0: total_dias_ciclo = 30
         
@@ -212,46 +212,45 @@ def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_
         dias_restantes = (dt_proximo - dt_hoje).days
         if dias_restantes < 0: dias_restantes = 0
         
-        # 3. Média Necessária (Saldo histórico do dia do recebimento / total de dias do ciclo)
-        # Para descobrir o saldo que você tinha no dia do recebimento, somamos o saldo atual + o que foi gasto depois
+        # 3. Busca de despesas reais feitas exclusivamente DESDE o Dia 1 (dia seguinte ao recebimento) até hoje
         resposta_gastos = supabase.table("lancamentos")\
             .select("valor, created_at")\
             .eq("usuario_id", id_usuario_logado)\
             .lt("valor", 0)\
+            .gte("created_at", dt_dia_um.strftime("%Y-%m-%dT00:00:00+00:00"))\
+            .lte("created_at", dt_hoje.strftime("%Y-%m-%dT23:59:59+00:00"))\
             .execute()
             
-        total_gasto_desde_dia_seguinte = 0.0
+        total_gasto_passado = 0.0
         if resposta_gastos.data:
-            for item in resposta_gastos.data:
-                data_lancado_curta = item["created_at"][:10]
-                # Soma tudo o que saiu a partir do dia seguinte (12/09) até hoje
-                if dt_inicio_gasto.strftime("%Y-%m-%d") <= data_lancado_curta <= dt_hoje.strftime("%Y-%m-%d"):
-                    total_gasto_desde_dia_seguinte += abs(float(item["valor"]))
-                    
-        saldo_no_dia_recebimento = saldo_atual + total_gasto_desde_dia_seguinte
-        media_necessaria = saldo_no_dia_recebimento / total_dias_ciclo
+            total_gasto_passado = sum(abs(float(item["valor"])) for item in resposta_gastos.data)
+            
+        # 4. Reconstrói o Saldo do Dia 1 (Saldo que ela tinha na manhã do dia 12)
+        saldo_disponivel_dia_um = saldo_atual + total_gasto_passado
         
-        # 4. Média Real (Quanto gastou de verdade por dia desde o dia seguinte)
-        media_real = total_gasto_desde_dia_seguinte / dias_passados if dias_passados > 0 else 0.0
+        # 5. Média Necessária Fixa (Saldo do Dia 1 dividido pelo ciclo total de 30 dias)
+        media_necessaria = saldo_disponivel_dia_um / total_dias_ciclo if total_dias_ciclo > 0 else 0.0
         
-        # 5. Quanto PODE gastar por dia a partir de hoje
+        # 6. Média Real (Quanto ela vem gastando de verdade por dia desde o dia 12)
+        media_real = total_gasto_passado / dias_passados if dias_passados > 0 else 0.0
+        
+        # 7. Gasto Futuro Projetado baseado na velocidade real
+        gasto_futuro_estimado = media_real * dias_restantes
+        
+        # 8. Quanto ela PODE gastar por dia de hoje em diante para não quebrar (Saldo atual / dias restantes)
         quanto_pode_gastar_hoje = saldo_atual / dias_restantes if dias_restantes > 0 else 0.0
         
-        # 6. Cálculo exato de quantos dias o dinheiro vai durar se continuar na média real
-        if media_real > 0:
-            dias_duracao_estimada = saldo_atual / media_real
-            dias_deficit = dias_restantes - dias_duracao_estimada
-        else:
-            dias_duracao_estimada = dias_restantes
-            dias_deficit = 0.0
-            
+        # Lógica do Defasagem Financeira (O Puxão de Orelha)
+        # Se o que ela vai gastar no futuro (gasto_futuro) for maior do que ela tem no bolso hoje (saldo_atual)
+        rombo_estimado = gasto_futuro_estimado - saldo_atual
+        
         return {
-            "dias_passados": dias_passados,
             "dias_restantes": dias_restantes,
             "media_necessaria": media_necessaria,
             "media_real": media_real,
             "quanto_pode_gastar_hoje": quanto_pode_gastar_hoje,
-            "dias_deficit": round(dias_deficit, 1) if dias_deficit > 0 else 0
+            "rombo_estimado": round(rombo_estimado, 2) if rombo_estimado > 0 else 0.0,
+            "saldo_disponivel_dia_um": saldo_disponivel_dia_um
         }
     except Exception as e:
         print(f"❌ Erro na calibração do motor: {e}")
