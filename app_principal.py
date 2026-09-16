@@ -131,25 +131,25 @@ else:
         dados_autonomia = mod_previsoes.calcular_autonomia_caixa_real(st.session_state.usuario_id, data_ultimo, data_proximo, saldo_em_bolso)
         
         if dados_autonomia:
-            st.markdown("### 🧭 Diagnóstico do Manche")
+            st.markdown("### 🧭 Diagnóstico")
             
             c_met1, c_met2, c_met3 = st.columns(3)
-            c_met1.metric(label="Sua Velocidade (Média Diária)", value=f"R$ {dados_autonomia['media_diaria']:,.2f}")
-            c_met2.metric(label="Dias Restantes de Estrada", value=f"{dados_autonomia['dias_restantes']} dias")
-            c_met3.metric(label="Combustível Atual (No Bolso)", value=f"R$ {saldo_em_bolso:,.2f}")
+            c_met1.metric(label="Sua Média (Média Diária)", value=f" {dados_autonomia['media_diaria']:,.2f}")
+            c_met2.metric(label="Dias Restantes", value=f"{dados_autonomia['dias_restantes']} dias")
+            c_met3.metric(label="Saldo Atual (No Bolso)", value=f" {saldo_em_bolso:,.2f}")
             
             st.markdown("---")
             
             if dados_autonomia["saldo_livre_estimado"] >= 0:
                 st.success(
-                    f"🟢 **Rota Segura!** Mantendo o ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
-                    f"seu dinheiro chegará ao final do ciclo com uma folga estimada de **R$ {dados_autonomia['saldo_livre_estimado']:,.2f}** no bolso!"
+                    f"🟢 **Rota Segura!** Mantendo o ritmo atual de {dados_autonomia['media_diaria']:,.2f}/dia**, "
+                    f"seu dinheiro chegará ao final do ciclo com uma folga estimada de {dados_autonomia['saldo_livre_estimado']:,.2f}** no bolso!"
                 )
             else:
                 st.error(
-                    f"🔴 **Alerta de Pane Seca!** No ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
-                    f"suas despesas estimadas vão superar seu bolso em **R$ {abs(dados_autonomia['saldo_livre_estimado']):,.2f}** antes do próximo recebimento.\n\n"
-                    f"💡 **Conselho do Comandante:** Para fechar o mês no azul, reduza o ritmo diário para no máximo **R$ {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
+                    f"🔴 **Alerta de Pane Seca!** No ritmo atual de {dados_autonomia['media_diaria']:,.2f}/dia**, "
+                    f"suas despesas estimadas vão superar seu bolso em {abs(dados_autonomia['saldo_livre_estimado']):,.2f}** antes do próximo recebimento.\n\n"
+                    f"💡 **Conselho:** Para fechar o mês no azul, reduza o ritmo diário para no máximo {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
                 )
 
     # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
@@ -328,7 +328,7 @@ else:
                             st.toast("⚡ Registros eliminados!", icon="🗑️")
                             st.rerun()
                 
-                                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
+                # 3. FLUXO DE EDIÇÃO INSTANTÂNEA (Versão Direta e Imune a Erros)
                 mudancas = st.session_state.get("extrato_vico_system")
                 if mudancas and mudancas.get("edited_rows"):
                     sucesso_global = True
@@ -436,7 +436,7 @@ else:
                         st.error("❌ Falha técnica ao salvar o lançamento no servidor.")
 
 
-        # --- TELA 3: CADASTROS BÁSICOS ---
+    # --- TELA 3: CADASTROS BÁSICOS ---
     elif opcao_menu == "⚙️ Cadastros Básicos":
         st.title("⚙️ Configurações de Estrutura")
         st.write("Gerencie os parâmetros operacionais da sua plataforma de forma simples.")
@@ -531,7 +531,7 @@ else:
                                                     st.cache_data.clear()
                                                     st.rerun()
 
-                # 2. ABA DE BANCOS (Estrutura blindada e alinhada)
+        # 2. ABA DE BANCOS (Estrutura blindada e alinhada)
         with tab_bancos:
             st.subheader("🏦 Gerenciar Bancos")
             lista_bancos_reais = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "NuBank", "Caixa"]
@@ -588,8 +588,8 @@ else:
                                     
                                 else:
                                     st.error("Erro técnico ao tentar deletar o banco.")
-                                        # =========================================================================
-        # =========================================================================
+                                        
+    # =========================================================================
     # TELA 4: ORÇAMENTO PREDITIVO (O PARA-BRISA)
     # =========================================================================
     elif opcao_menu == "🔮 Orçamento Preditivo":
@@ -656,7 +656,7 @@ else:
                 else:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
-                        # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
+        # 3. ABA DE VISUALIZAÇÃO MÊS A MÊS (O REAL PARA-BRISA)
         with tab_visualizar:
             st.subheader("🗓️ Gestão e Projeção do Orçamento")
             st.write("Abaixo estão suas contas futuras. Marque a caixinha 'Baixar' para pagá-la ou 'Excluir' para deletar a projeção.")
