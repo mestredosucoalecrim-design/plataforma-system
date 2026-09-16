@@ -13,27 +13,6 @@ def buscar_bancos_reais(id_usuario_logado: str) -> list:
     except Exception:
         return []
 
-if st.button("Gravar Nova Conta", type="primary", key="btn_gravar_novo_banco"):
-    if not novo_banco_nome:
-        st.warning("⚠️ Digite o nome do banco antes de gravar.")
-    else:
-        with st.spinner("Conectando com o servidor Supabase..."):
-            try:
-                # 🔴 LINHA FALTANDO: Chama a função que realmente grava!
-                resultado_banco = mod_estruturas.cadastrar_novo_banco_real(novo_banco_nome, st.session_state.usuario_id)
-                
-                if resultado_banco == "sucesso":
-                    st.success(f"🏦 Conta do '{novo_banco_nome}' adicionada com sucesso!")
-                    st.cache_data.clear()
-                    st.rerun()
-                elif resultado_banco == "duplicado":
-                    st.warning("⚠️ Este banco já está cadastrado.")
-                else:
-                    st.error(f"❌ Erro ao salvar banco: {resultado_banco}")
-            except Exception as e_banco:
-                st.error(f"Erro ao salvar banco: {e_banco}")
-
-
 def buscar_categorias_banco(id_usuario_logado: str) -> pd.DataFrame:
     """Busca as categorias do Supabase filtrando rigorosamente pelo usuário ativo."""
     try:
@@ -45,7 +24,6 @@ def buscar_categorias_banco(id_usuario_logado: str) -> pd.DataFrame:
     except Exception as e:
         print(f"Erro ao buscar categorias protegidas: {e}")
         return pd.DataFrame(columns=["id", "categoria"])
-        
 
 def cadastrar_nova_categoria_real(nome_categoria: str, id_usuario_logado: str) -> str:
     """Grava a nova categoria calculando o ID autoincremento via Python."""
@@ -72,7 +50,32 @@ def cadastrar_nova_categoria_real(nome_categoria: str, id_usuario_logado: str) -
     except Exception as e:
         print(f"Erro ao salvar nova categoria: {e}")
         return "erro"
+
+def cadastrar_novo_banco_real(nome_banco: str, id_usuario_logado: str) -> str:
+    """Grava o novo banco no Supabase calculando o ID autoincremento via Python."""
+    try:
+        supabase = mod_conexao.criar_conexao()
+        nome_limpo = nome_banco.strip().lower()
         
+        checagem = supabase.table("banco").select("banco").eq("banco", nome_limpo).eq("usuario_id", id_usuario_logado).execute()
+        if checagem.data:
+            return "duplicado"
+            
+        todas_linhas = supabase.table("banco").select("id").execute()
+        proximo_id = 1
+        if todas_linhas.data:
+            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
+            proximo_id = maior_id + 1
+            
+        supabase.table("banco").insert({
+            "id": proximo_id, 
+            "banco": nome_limpo, 
+            "usuario_id": id_usuario_logado
+        }).execute()
+        return "sucesso"
+    except Exception as e:
+        print(f"Erro ao salvar novo banco: {e}")
+        return "erro"
 
 def buscar_produtos_unicos(id_usuario_logado: str) -> list:
     """Busca a lista de produtos cadastrados pertencentes estritamente ao usuário logado."""
@@ -85,33 +88,3 @@ def buscar_produtos_unicos(id_usuario_logado: str) -> list:
         return []
     except Exception:
         return []
-
-def cadastrar_novo_banco_real(nome_banco: str, id_usuario_logado: str) -> str:
-    """Grava o novo banco no Supabase calculando o ID autoincremento via Python."""
-    try:
-        supabase = mod_conexao.criar_conexao()
-        nome_limpo = nome_banco.strip().lower()
-        
-        # 1. Evita cadastrar o mesmo banco duplicado para o mesmo usuário
-        checagem = supabase.table("banco").select("banco").eq("banco", nome_limpo).eq("usuario_id", id_usuario_logado).execute()
-        if checagem.data:
-            return "duplicado"
-            
-        # 2. Descobre o próximo ID disponível na tabela
-        todas_linhas = supabase.table("banco").select("id").execute()
-        proximo_id = 1
-        if todas_linhas.data:
-            maior_id = max([int(linha["id"]) for linha in todas_linhas.data if linha["id"] is not None], default=0)
-            proximo_id = maior_id + 1
-            
-        # 3. Realiza a inserção oficial no banco de dados
-        supabase.table("banco").insert({
-            "id": proximo_id, 
-            "banco": nome_limpo, 
-            "usuario_id": id_usuario_logado
-        }).execute()
-        
-        return "sucesso"
-    except Exception as e:
-        print(f"Erro ao salvar novo banco: {e}")
-        return f"erro: {str(e)}"
