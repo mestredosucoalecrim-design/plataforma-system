@@ -147,7 +147,6 @@ def dar_baixa_parcela_futura(id_parcela: int, id_usuario_logado: str, banco_esco
         return False
 
 
-
 def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -> bool:
     """Deleta permanentemente uma projeção do para-brisa sem gerar lançamento real."""
     try:

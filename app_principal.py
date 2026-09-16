@@ -132,7 +132,15 @@ else:
         # Dispara o motor enviando a data informada
         with st.spinner("Conectando ao banco de dados nu bank..."):
             dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo)
-        
+            
+        # 🧪 BLOCO ESPICULADOR TEMPORÁRIO (Seu F8 Visual)
+        with st.expander("🔍 Rastreamento de Variáveis Internas (Modo Depuração)", expanded=True):
+            st.write("Compare estes números com as células da sua planilha para achar o erro:")
+            if dados:
+                st.json(dados) # Mostra todas as variáveis calculadas pelo motor de uma vez
+            else:
+                st.error("O motor retornou vazio (None)!")
+
         if dados:
             st.markdown("### 🧭 Indicadores Operacionais")
             
