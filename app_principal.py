@@ -42,7 +42,7 @@ NOME_MESES = [
 # TELA 1: INTERFACE DE LOGIN / CADASTRO (AUTENTICAÇÃO REAL CONECTADA)
 # =========================================================================
 if not st.session_state.logado:
-    st.title("Plataforma S.Y.S.T.E.M")
+    st.title("Plataforma S.Y.S.T.E.M modo seguro")
     st.subheader("Acesso Restrito")
     
     # Cria as duas abas limpas na tela
