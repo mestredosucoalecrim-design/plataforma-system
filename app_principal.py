@@ -6,6 +6,18 @@ import mod_estruturas
 import mod_previsoes
 import pandas as pd
 
+# Injeta um estilo CSS para esconder o menu do topo e o botão de visualização
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # 1. Configuração de Layout da Página
 st.set_page_config(
     page_title="Plataforma S.Y.S.T.E.M",
