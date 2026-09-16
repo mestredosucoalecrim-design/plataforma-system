@@ -8,10 +8,14 @@ def gerenciar_salario_usuario(id_usuario_logado: str, novo_salario: float) -> bo
     try:
         supabase = mod_conexao.criar_conexao()
         
-        supabase.table("usuario_config").upsert({
-            "usuario_id": id_usuario_logado,
+        # Forçamos a limpeza e conversão dos dados para evitar rejeição do banco
+        dados = {
+            "usuario_id": str(id_usuario_logado).strip(),
             "salario_bruto": float(novo_salario)
-        }).execute()
+        }
+        
+        # Executa o upsert explícito baseado na chave única usuario_id
+        supabase.table("usuario_config").upsert(dados, on_conflict="usuario_id").execute()
         return True
     except Exception as e:
         print(f"❌ Erro ao gerenciar salário: {e}")
@@ -21,14 +25,16 @@ def buscar_salario_usuario(id_usuario_logado: str) -> float:
     """Busca o salário cadastrado do usuário. Se não houver, retorna 0.00."""
     try:
         supabase = mod_conexao.criar_conexao()
-        resposta = supabase.table("usuario_config").select("salario_bruto").eq("usuario_id", id_usuario_logado).execute()
+        resposta = supabase.table("usuario_config").select("salario_bruto").eq("usuario_id", str(id_usuario_logado).strip()).execute()
         
         if resposta.data and len(resposta.data) > 0:
+            # Retorna o valor puro extraído do primeiro registro da lista
             return float(resposta.data[0]["salario_bruto"])
         return 0.00
     except Exception as e:
         print(f"❌ Erro ao buscar salário: {e}")
         return 0.00
+
 
 def gerar_lancamentos_futuros_parcelados(
     descricao: str, 
@@ -105,7 +111,7 @@ def calcular_comprometimento_mensal_futuro(id_usuario_logado: str) -> pd.DataFra
     except Exception as e:
         print(f"❌ Erro ao calcular comprometimento futuro: {e}")
         return pd.DataFrame(columns=["Ano_Mes", "Mês/Ano", "Comprometido"])
-    
+
 def dar_baixa_parcela_futura(id_parcela: int, id_usuario_logado: str, banco_escolhido: str) -> bool:
     """Remove a parcela do orçamento previsto e insere com a data de HOJE no passado."""
     try:
@@ -139,6 +145,8 @@ def dar_baixa_parcela_futura(id_parcela: int, id_usuario_logado: str, banco_esco
     except Exception as e:
         print(f"❌ Erro ao dar baixa: {e}")
         return False
+
+
 
 def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -> bool:
     """Deleta permanentemente uma projeção do para-brisa sem gerar lançamento real."""
@@ -174,3 +182,120 @@ def buscar_detalhe_compromissos_abertos(id_usuario_logado: str) -> list:
     except Exception as e:
         # Se o banco rejeitar por qualquer motivo estrutural, o Python vai cuspir o erro aqui
         return [{"ERRO_CRITICO": str(e)}]
+def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_proximo_rec, saldo_atual: float) -> dict:
+    """
+    Calcula a média diária real de gastos passados a partir do último recebimento
+    e projeta a autonomia do saldo atual até o próximo recebimento.
+    """
+    try:
+        from datetime import datetime
+        supabase = mod_conexao.criar_conexao()
+        
+        # 1. Garante que as datas estejam no formato correto de objeto date
+        dt_ultimo = datetime.strptime(str(data_ultimo_rec), "%Y-%m-%d").date() if isinstance(data_ultimo_rec, str) else data_ultimo_rec
+        dt_proximo = datetime.strptime(str(data_proximo_rec), "%Y-%m-%d").date() if isinstance(data_proximo_rec, str) else data_proximo_rec
+        dt_hoje = datetime.now().date()
+        
+        # 2. Calcula as janelas de dias (Calendário puro)
+        dias_passados = (dt_hoje - dt_ultimo).days
+        if dias_passados <= 0: 
+            dias_passados = 1 # Evita divisão por zero se o dinheiro entrou hoje
+            
+        dias_restantes = (dt_proximo - dt_hoje).days
+        if dias_restantes < 0: 
+            dias_restantes = 0 # Caso já tenha passado da data prevista
+            
+        # 3. Busca e soma os gastos reais do usuário estritamente DESDE o último recebimento até HOJE
+        # Filtramos valores negativos (despesas)
+        resposta = supabase.table("lancamentos")\
+            .select("valor")\
+            .eq("usuario_id", id_usuario_logado)\
+            .gte("created_at", dt_ultimo.strftime("%Y-%m-%dT00:00:00+00:00"))\
+            .lte("created_at", dt_hoje.strftime("%Y-%m-%dT23:59:59+00:00"))\
+            .lt("valor", 0)\
+            .execute()
+            
+        total_gasto_periodo = 0.0
+        if resposta.data:
+            total_gasto_periodo = sum(abs(float(item["valor"])) for item in resposta.data)
+            
+        # 4. Calcula a média real diária consumida
+        media_diaria = total_gasto_periodo / dias_passados
+        
+        # 5. Projeta o consumo necessário para o futuro
+        gasto_estimado_futuro = media_diaria * dias_restantes
+        saldo_livre_estimado = saldo_atual - gasto_estimado_futuro
+        
+        # Média ideal para o dinheiro durar exatamente até o alvo com folga zero
+        media_ideal = saldo_atual / dias_restantes if dias_restantes > 0 else 0.0
+        
+        return {
+            "dias_passados": dias_passados,
+            "dias_restantes": dias_restantes,
+            "total_gasto_periodo": total_gasto_periodo,
+            "media_diaria": media_diaria,
+            "gasto_estimado_futuro": gasto_estimado_futuro,
+            "saldo_livre_estimado": saldo_livre_estimado,
+            "media_ideal": media_ideal
+        }
+    except Exception as e:
+        print(f"❌ Erro no cálculo de autonomia: {e}")
+        return None
+def calcular_autonomia_caixa_real(id_usuario_logado: str, data_ultimo_rec, data_proximo_rec, saldo_atual: float) -> dict:
+    """
+    Calcula a média diária real de gastos passados a partir do último recebimento
+    e projeta a autonomia do saldo atual até o próximo recebimento.
+    """
+    try:
+        from datetime import datetime
+        supabase = mod_conexao.criar_conexao()
+        
+        # 1. Garante que as datas estejam no formato correto de objeto date
+        dt_ultimo = datetime.strptime(str(data_ultimo_rec), "%Y-%m-%d").date() if isinstance(data_ultimo_rec, str) else data_ultimo_rec
+        dt_proximo = datetime.strptime(str(data_proximo_rec), "%Y-%m-%d").date() if isinstance(data_proximo_rec, str) else data_proximo_rec
+        dt_hoje = datetime.now().date()
+        
+        # 2. Calcula as janelas de dias (Calendário puro)
+        dias_passados = (dt_hoje - dt_ultimo).days
+        if dias_passados <= 0: 
+            dias_passados = 1 # Evita divisão por zero se o dinheiro entrou hoje
+            
+        dias_restantes = (dt_proximo - dt_hoje).days
+        if dias_restantes < 0: 
+            dias_restantes = 0 # Caso já tenha passado da data prevista
+            
+        # 3. Busca e soma os gastos reais do usuário estritamente DESDE o último recebimento até HOJE
+        resposta = supabase.table("lancamentos")\
+            .select("valor")\
+            .eq("usuario_id", id_usuario_logado)\
+            .gte("created_at", dt_ultimo.strftime("%Y-%m-%dT00:00:00+00:00"))\
+            .lte("created_at", dt_hoje.strftime("%Y-%m-%dT23:59:59+00:00"))\
+            .lt("valor", 0)\
+            .execute()
+            
+        total_gasto_periodo = 0.0
+        if resposta.data:
+            total_gasto_periodo = sum(abs(float(item["valor"])) for item in resposta.data)
+            
+        # 4. Calcula a média real diária consumida
+        media_diaria = total_gasto_periodo / dias_passados
+        
+        # 5. Projeta o consumo necessário para o futuro
+        gasto_estimado_futuro = media_diaria * dias_restantes
+        saldo_livre_estimado = saldo_atual - gasto_estimado_futuro
+        
+        # Média ideal para o dinheiro durar exatamente até o alvo com folga zero
+        media_ideal = saldo_atual / dias_restantes if dias_restantes > 0 else 0.0
+        
+        return {
+            "dias_passados": dias_passados,
+            "dias_restantes": dias_restantes,
+            "total_gasto_periodo": total_gasto_periodo,
+            "media_diaria": media_diaria,
+            "gasto_estimado_futuro": gasto_estimado_futuro,
+            "saldo_livre_estimado": saldo_livre_estimado,
+            "media_ideal": media_ideal
+        }
+    except Exception as e:
+        print(f"❌ Erro no cálculo de autonomia: {e}")
+        return None

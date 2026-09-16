@@ -1,6 +1,22 @@
 [theme]
 primaryColor = "#FF4B4B"
+
 backgroundColor = "#0E1117"
+
 secondaryBackgroundColor = "#262730"
+
 textColor = "#FAFAFA"
+
 font = "sans serif"
+
+[client]
+# Esconde o menu de opções do canto superior direito (onde fica o "View source")
+showSidebarNavigation = false
+
+[development]
+# Desativa ferramentas de desenvolvimento na tela
+watchmode = false
+
+[ui]
+# Esconde o botão e opções de visualização de código-fonte
+hideTopBarMenu = true

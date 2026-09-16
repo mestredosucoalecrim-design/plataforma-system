@@ -92,11 +92,12 @@ if not st.session_state.logado:
 # =========================================================================
 else:
     st.sidebar.title("S.Y.S.T.E.M v2.0")
-    st.sidebar.write("👤 Usuário: **Administrador Teste**")
+    st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
     
+    # 🟢 ADICIONADO: '🏠 Menu Principal' entra como a primeira opção da lista
     opcao_menu = st.sidebar.radio(
         "Selecione uma Tela:",
-        ["📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
+        ["🏠 Menu Principal", "📈 Painel e Extratos", "📥 Novo Lançamento", "⚙️ Cadastros Básicos", "🔮 Orçamento Preditivo"],
         key="menu_principal"
     )
     
@@ -105,8 +106,55 @@ else:
         st.session_state.logado = False
         st.rerun()
 
-    # --- TELA 1: PAINEL E EXTRATOS ---
-    if opcao_menu == "📈 Painel e Extratos":
+    # 🟢 NOVO BLOCO: RENDERIZA O SEU MARCADOR DE COMBUSTÍVEL SE A PRIMEIRA OPÇÃO FOR SELECIONADA
+    if opcao_menu == "🏠 Menu Principal":
+        st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
+        st.markdown(f"Olá, **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
+        
+        st.markdown("---")
+        st.subheader("📊 Marcador de Autonomia Financeira")
+        st.write("Calibre os sensores informando o ciclo do seu recebimento para monitorar seu ritmo de consumo:")
+        
+        # Caixas de entrada para o ciclo dinâmico do dinheiro do William
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            data_ultimo = st.date_input("Data do Último Recebimento:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
+        with col_d2:
+            data_proximo = st.date_input("Data do Próximo Recebimento:", value=pd.Timestamp.now().date() + pd.Timedelta(days=25), key="cal_data_proximo")
+            
+        # Busca o saldo consolidado atual do usuário para o cálculo
+        df_glob_menu = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
+        resumo_menu = mod_calculos.calcular_resumo_memoria(df_glob_menu)
+        saldo_em_bolso = resumo_menu['saldo']
+        
+        # Dispara o motor de cálculo matemático do mod_previsoes
+        dados_autonomia = mod_previsoes.calcular_autonomia_caixa_real(st.session_state.usuario_id, data_ultimo, data_proximo, saldo_em_bolso)
+        
+        if dados_autonomia:
+            st.markdown("### 🧭 Diagnóstico do Manche")
+            
+            c_met1, c_met2, c_met3 = st.columns(3)
+            c_met1.metric(label="Sua Velocidade (Média Diária)", value=f"R$ {dados_autonomia['media_diaria']:,.2f}")
+            c_met2.metric(label="Dias Restantes de Estrada", value=f"{dados_autonomia['dias_restantes']} dias")
+            c_met3.metric(label="Combustível Atual (No Bolso)", value=f"R$ {saldo_em_bolso:,.2f}")
+            
+            st.markdown("---")
+            
+            if dados_autonomia["saldo_livre_estimado"] >= 0:
+                st.success(
+                    f"🟢 **Rota Segura!** Mantendo o ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
+                    f"seu dinheiro chegará ao final do ciclo com uma folga estimada de **R$ {dados_autonomia['saldo_livre_estimado']:,.2f}** no bolso!"
+                )
+            else:
+                st.error(
+                    f"🔴 **Alerta de Pane Seca!** No ritmo atual de **R$ {dados_autonomia['media_diaria']:,.2f}/dia**, "
+                    f"suas despesas estimadas vão superar seu bolso em **R$ {abs(dados_autonomia['saldo_livre_estimado']):,.2f}** antes do próximo recebimento.\n\n"
+                    f"💡 **Conselho do Comandante:** Para fechar o mês no azul, reduza o ritmo diário para no máximo **R$ {dados_autonomia['media_ideal']:,.2f}/dia** a partir de amanhã!"
+                )
+
+    # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
+    elif opcao_menu == "📈 Painel e Extratos":
+        st.title("Painel Financeiro")
         st.title("Painel Financeiro")
         
         # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro
@@ -189,7 +237,7 @@ else:
                         )
                         figura_categoria.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
                         figura_categoria.update_yaxes(categoryorder='total ascending')
-                        st.plotly_chart(figura_categoria, use_container_width=True)
+                        st.plotly_chart(figura_categoria, use_container_width=True, config={'displayModeBar': False})
                     except Exception as e:
                         st.error(f"Erro G1: {e}")
 
@@ -209,7 +257,7 @@ else:
                             color_discrete_map={'Receitas': '#2ECC71', 'Despesas': '#E74C3C'}
                         )
                         figura_barras.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
-                        st.plotly_chart(figura_barras, use_container_width=True)
+                        st.plotly_chart(figura_barras, use_container_width=True, config={'displayModeBar': False})
                     except Exception as e:
                         st.error(f"Erro G2: {e}")
 
@@ -231,7 +279,7 @@ else:
                          )
                         figura_produtos.update_layout(margin=dict(t=5, b=5, l=5, r=5), height=220, showlegend=False)
                         figura_produtos.update_yaxes(categoryorder='total ascending')
-                        st.plotly_chart(figura_produtos, use_container_width=True)
+                        st.plotly_chart(figura_produtos, use_container_width=True, config={'displayModeBar': False})
                     except Exception as e:
                         st.error(f"Erro G3: {e}")
 
