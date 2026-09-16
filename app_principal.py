@@ -118,33 +118,31 @@ else:
         st.session_state.logado = False
         st.rerun()
 
-    # 🟢 NOVO BLOCO: RENDERIZA O SEU MARCADOR DE COMBUSTÍVEL SE A PRIMEIRA OPÇÃO FOR SELECIONADA
-        # 🟢 BLOCO COCKPIT: RADAR DINÂMICO ADAPTADO PARA RECEBIMENTOS DE ALUGUÉIS
+        # 🟢 BLOCO COCKPIT: RADAR FINANCEIRO ALINHADO COM O EXCEL
     if opcao_menu == "🏠 Menu Principal":
-        st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
+        st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.EM")
         st.markdown(f"Olá, Comandante **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
         
         st.markdown("---")
         st.subheader("📊 Marcador de Autonomia Financeira")
-        st.write("Informe abaixo o ciclo real do seu último e próximo recebimento (ajustando conforme antecipações ou atrasos de aluguéis):")
         
-        # Suas caixas de entrada de data preservadas para controle total das flutuações
+        # Caixas de entrada para o ciclo dinâmico das suas faturas/recebimentos
         col_d1, col_d2 = st.columns(2)
         with col_d1:
-            data_ultimo = st.date_input("Data do Último Recebimento Relevante:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
+            data_ultimo = st.date_input("Data do Último Recebimento (Dia 0):", value=pd.Timestamp.now().date() - pd.Timedelta(days=4), key="cal_data_ultimo")
         with col_d2:
-            data_proximo = st.date_input("Data da Próxima Previsão de Entrada:", value=pd.Timestamp.now().date() + pd.Timedelta(days=25), key="cal_data_proximo")
+            data_proximo = st.date_input("Data do Próximo Recebimento:", value=pd.Timestamp.now().date() + pd.Timedelta(days=26), key="cal_data_proximo")
             
-        # 1. Busca o saldo consolidado atual real do usuário para o cálculo
+        # [RESOLUÇÃO ERRO 1]: Puxa o saldo real definitivo somado de todo o histórico desde 2014
         df_glob_menu = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
         resumo_menu = mod_calculos.calcular_resumo_memoria(df_glob_menu)
-        saldo_em_bolso = resumo_menu['saldo']
+        saldo_real_historico = resumo_menu['saldo']
         
-        # 2. Dispara o motor de cálculo passando as datas escolhidas por você nas caixas acima
-        with st.spinner("Calibrando sensores dinâmicos com a nuvem..."):
+        # Dispara o motor recalibrado passando as datas e o saldo real histórico
+        with st.spinner("Calibrando sensores com o banco de dados..."):
             dados_autonomia = mod_previsoes.calcular_radar_sobrevivencia_real(
                 st.session_state.usuario_id, 
-                saldo_em_bolso,
+                saldo_real_historico,
                 data_ultimo,
                 data_proximo
             )
@@ -152,65 +150,43 @@ else:
         if dados_autonomia:
             st.markdown("### 🧭 Diagnóstico do Manche")
             
-            # Layout de 3 Colunas Largas para melhor leitura visual (evita espremer textos)
+            # Painel com os nomes exatos das suas colunas do Excel
             c_met1, c_met2, c_met3 = st.columns(3)
             
             with c_met1:
-                st.metric(
-                    label="🏦 Saldo Atual Disponível", 
-                    value=f"R$ {saldo_em_bolso:,.2f}"
-                )
-                st.caption(f"Fundo do ciclo reconstruído: **R$ {dados_autonomia['saldo_disponivel_dia_um']:,.2f}**")
+                st.metric(label="🏦 Realidade (Saldo Atual)", value=f"R$ {saldo_real_historico:,.2f}")
+                st.caption(f"Valor identificado no dia do ciclo: **R$ {dados_autonomia['total_recebido']:,.2f}**")
             
             with c_met2:
-                st.metric(
-                    label="🎯 Teto Diário Calculado", 
-                    value=f"R$ {dados_autonomia['media_necessaria']:,.2f}/dia",
-                    help="Meta diária ideal considerando a data de início que você informou."
-                )
-                st.caption(f"Restam **{dados_autonomia['dias_restantes']} dias** para a próxima data estipulada.")
+                st.metric(label="🎯 Média Necessária", value=f"R$ {dados_autonomia['media_necessaria']:,.2f}/dia")
+                st.caption(f"Dias passados: **{dados_autonomia['dias_passados']}** | Faltam: **{dados_autonomia['dias_restantes']} dias**")
                 
             with c_met3:
-                # Calcula a defasagem diária para colorir o indicador
-                diferenca_diaria = dados_autonomia['media_real'] - dados_autonomia['media_necessaria']
-                if diferenca_diaria > 0:
-                    st.metric(
-                        label="🚏 Velocidade Real de Consumo", 
-                        value=f"R$ {dados_autonomia['media_real']:,.2f}/dia",
-                        delta=f"+R$ {diferenca_diaria:,.2f} ACIMA DO LIMITE",
-                        delta_color="inverse"
-                    )
+                # Mostra o delta comparando com a sua planilha
+                diferenca = dados_autonomia['media_real'] - dados_autonomia['media_necessaria']
+                if diferenca > 0:
+                    st.metric(label="🚏 Média Hoje", value=f"R$ {dados_autonomia['media_real']:,.2f}/dia", delta=f"+R$ {diferenca:,.2f} ACIMA DA META", delta_color="inverse")
                 else:
-                    st.metric(
-                        label="🚏 Velocidade Real de Consumo", 
-                        value=f"R$ {dados_autonomia['media_real']:,.2f}/dia",
-                        delta=f"R$ {abs(diferenca_diaria):,.2f} SOB CONTROLE",
-                        delta_color="normal"
-                    )
+                    st.metric(label="🚏 Média Hoje", value=f"R$ {dados_autonomia['media_real']:,.2f}/dia", delta=f"R$ {abs(diferenca):,.2f} SOB CONTROLE", delta_color="normal")
                     
             st.markdown("---")
             
-            # Recalibragem de rota do GPS
-            st.info(f"🔄 **Recalculando Rota:** Para o saldo durar até {data_proximo.strftime('%d/%m')}, seu limite de consumo atualizado de hoje em diante é de **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}/dia**.")
+            # Campo de recalibragem da rota do combustível (O seu "Posso até")
+            st.info(f"🔄 **Posso até gastar:** R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f} por dia de hoje em diante para equilibrar o tanque.")
             
-            # 3. Exibição do Puxão de Orelha Inteligente baseado no Rombo Projetado
-            if dados_autonomia["rombo_estimado"] == 0:
-                st.success(
-                    f"🟢 **Rota Segura!** Seu ritmo de gastos real está perfeitamente dentro do limite projetado para este ciclo imobiliário. "
-                    f"Você pode gastar até **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f} por dia** para chegar ao final do período com total folga!"
-                )
-            else:
+            # O Puxão de orelha idêntico à sua tabela
+            if dados_autonomia["rombo_estimado"] > 0:
                 gasto_futuro_total = dados_autonomia['media_real'] * dados_autonomia['dias_restantes']
                 st.error(
                     f"🔴 **⚠️ PUXÃO DE ORELHA FINANCEIRO:**\n\n"
-                    f"Se você continuar gastando **R$ {dados_autonomia['media_real']:,.2f} por dia**, "
-                    f"as suas despesas vão demandar **R$ {gasto_futuro_total:,.2f}** até a data do próximo recebimento ({data_proximo.strftime('%d/%m')}).\n\n"
-                    f"Como o seu saldo em conta hoje é de apenas **R$ {saldo_em_bolso:,.2f}**, "
-                    f"você terá um **rombo estimado de R$ {dados_autonomia['rombo_estimado']:,.2f}** antes que o próximo aluguel ou benefício caia na conta!\n\n"
-                    f"💡 **Ação Imediata de Comando:** Reduza o ritmo diário urgentemente para no máximo **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}/dia** para o tanque durar!"
+                    f"Se você continuar assim, vai gastar **R$ {gasto_futuro_total:,.2f}** até o final do mês.\n\n"
+                    f"Como o seu saldo real é de **R$ {saldo_real_historico:,.2f}**, você gastará mais **R$ {dados_autonomia['rombo_estimado']:,.2f}** do que tem em conta!\n\n"
+                    f"🚨 **Ação Corretiva:** Regule o consumo diário para no máximo **R$ {dados_autonomia['quanto_pode_gastar_hoje']:,.2f}/dia**."
                 )
+            else:
+                st.success("🟢 **Rota Segura!** No ritmo atual, a perspectiva aponta que seu saldo fechará o mês protegido.")
         else:
-            st.warning("📋 Não foi possível calcular a autonomia. Verifique os lançamentos no Supabase para as datas selecionadas.")
+            st.warning("📋 Não foi possível realizar o cálculo. Verifique seus lançamentos na tabela.")
 
 
     # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
