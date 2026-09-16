@@ -118,10 +118,10 @@ else:
         st.session_state.logado = False
         st.rerun()
 
-        # 🟢 BLOCO COCKPIT: PAINEL DE CONTROLE DIÁRIO (VBA SYNCED)
+    # 🟢 BLOCO COCKPIT: PAINEL DE CONTROLE DIÁRIO (VBA SYNCED)
     if opcao_menu == "🏠 Menu Principal":
         st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
-        st.markdown(f"Olá, Comandante **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
+        st.markdown(f"Olá, **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
         
         st.markdown("---")
         st.subheader("🔮 Painel de Controle Diário (Radar de Consumo)")
@@ -130,7 +130,7 @@ else:
         data_ultimo = st.date_input("Data do Último Recebimento (Célula J15):", value=pd.Timestamp.now().date() - pd.Timedelta(days=4), key="cal_data_ultimo")
         
         # Dispara o motor enviando a data informada
-        with st.spinner("Conectando ao banco de dados Nu Bank..."):
+        with st.spinner("Conectando ao banco de dados nu bank..."):
             dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo)
         
         if dados:
@@ -149,7 +149,7 @@ else:
             c_val1, c_val2, c_val3 = st.columns(3)
             with c_val1:
                 # Sua label Roxa do VBA (Realidade Hoje)
-                st.metric(label="💜 Realidade Hoje (Nu Bank)", value=f"R$ {dados['realidade_hoje']:,.2f}")
+                st.metric(label="💜 Realidade Hoje (nu bank)", value=f"R$ {dados['realidade_hoje']:,.2f}")
                 st.caption(f"Perspectiva teórica esperada: **R$ {dados['perspectiva_hoje']:,.2f}**")
                 
             with c_val2:
