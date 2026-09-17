@@ -164,46 +164,76 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
 
 def calcular_radar_sobrevivencia_real(id_usuario_logado: str, data_inicio, saldo_real_tela: float) -> dict:
     """
-    Motor matemático .
-    Usa o saldo real validado da tela para sincronização de centavos com o Excel.
+    Motor matemático 100% real e limpo de valores fixos.
+    Calcula o fluxo dinâmico com base estrita nos dados do Supabase do William.
     """
     try:
+        supabase = mod_conexao.criar_conexao()
         hoje = datetime.now().date()
+        
+        # Converte a data inicial da textbox (Ex: 11/09/2026)
         dt_recebimento = datetime.strptime(data_inicio, "%Y-%m-%d").date() if isinstance(data_inicio, str) else data_inicio
+        dt_dia_anterior = dt_recebimento - relativedelta(days=1)
         
-        # --- 1. CONTAGEM DE DIAS EXATA DO SEU BLOCO ---
-        # Se o recebimento foi dia 11 e hoje é 16 -> Se passaram 5 dias
+        # --- 1. CONTAGEM DE DIAS EXATA DO SEU EXCEL ---
         dias_passados = (hoje - dt_recebimento).days
-        if dias_passados <= 0: dias_passados = 5 # Padrão do seu teste se as datas forem iguais
+        if dias_passados <= 0: dias_passados = 1
         
-        # Dias que faltam para o próximo ciclo de 30 dias (30 - 5 = 25 dias)
         dias_restantes = 30 - dias_passados
         if dias_restantes <= 0: dias_restantes = 1
         
-        # --- 2. VALORES FIXADOS DA ENGENHARIA DA MARIA ---
-        saldo_anterior_dia_um = 2.62
-        receita_dia_zero = 580.00
-        despesa_fixa_dia_zero = -487.28
-        total_gastos_periodo = -44.50
-        total_entradas_extras = 50.00
+        # --- 2. BUSCA DE DADOS REAL NO SUPABASE ---
+        resposta = supabase.table("lancamentos").select("valor, created_at, banco").eq("usuario_id", id_usuario_logado).execute()
         
-        # --- 3. A MATEMÁTICA DO SEU FLUXO DE CAIXA ---
-        # Saldo Inicial Livre (2,62 + 580,00 - 487,28 = 95,34)
+        # Iniciamos as variáveis zeradas (Sem nenhum valor embutido escondido!)
+        saldo_anterior_dia_um = 0.0
+        receita_dia_zero = 0.0
+        despesa_fixa_dia_zero = 0.0
+        total_gastos_periodo = 0.0
+        total_entradas_extras = 0.0
+        
+        if resposta.data:
+            df = pd.DataFrame(resposta.data)
+            df["created_at"] = pd.to_datetime(df["created_at"]).dt.date
+            df["valor"] = pd.to_numeric(df["valor"])
+            
+            # Padroniza o filtro do banco para 'nubank'
+            df["banco_limpo"] = df["banco"].str.strip().str.lower().str.replace(" ", "")
+            df_nu = df[df["banco_limpo"] == "nu bank"]
+            
+            if not df_nu.empty:
+                # A. Saldo Histórico Acumulado até o dia anterior (O seu saldo inicial real)
+                saldo_anterior_dia_um = float(df_nu[df_nu["created_at"] <= dt_dia_anterior]["valor"].sum())
+                
+                # B. Entradas e Saídas do Dia do Recebimento (Dia 11)
+                df_dia_zero = df_nu[df_nu["created_at"] == dt_recebimento]
+                receita_dia_zero = float(df_dia_zero[df_dia_zero["valor"] > 0]["valor"].sum())
+                despesa_fixa_dia_zero = float(df_dia_zero[df_dia_zero["valor"] < 0]["valor"].sum())
+                
+                # C. Gastos e Entradas Extras do Período (Dia 12 até hoje)
+                dia_seguinte = dt_recebimento + relativedelta(days=1)
+                df_periodo = df_nu[(df_nu["created_at"] >= dia_seguinte) & (df_nu["created_at"] <= hoje)]
+                
+                total_gastos_periodo = float(df_periodo[df_periodo["valor"] < 0]["valor"].sum())
+                total_entradas_extras = float(df_periodo[df_periodo["valor"] > 0]["valor"].sum())
+
+        # --- 3. A MATEMÁTICA PURA DO SEU FLUXO DE CAIXA ---
+        # Saldo Inicial Livre = Saldo que já tinha + Tudo que entrou no dia 11 - Despesas fixas pagas no dia 11
         saldo_para_passar_mes = (saldo_anterior_dia_um + receita_dia_zero) - abs(despesa_fixa_dia_zero)
         
-        # Média Necessária Original (95,34 / 30 = 3,18)
-        media_necessaria_fixa = saldo_para_passar_mes / 30
+        # Média Necessária Original (Saldo livre dividido por 30)
+        media_necessaria_fixa = saldo_para_passar_mes / 30 if saldo_para_passar_mes > 0 else 0.0
         
-        # Média Real de gastos (-44,50 / 5 dias = -8,90 de velocidade)
+        # Média Real de Gastos (Total gasto do período dividido pelos dias que passaram)
         media_real_hoje = abs(total_gastos_periodo) / dias_passados
         
-        # Realidade Hoje (O saldo real capturado do seu bolso/tela: R$ 100,86)
+        # Realidade Hoje (O saldo atual verificado vindo da tela)
         realidade_hoje = saldo_real_tela
         
-        # Posso Até / Novo teto diário recalculado (100,86 / 25 dias = 4,03)
-        posso_ate_gastar_hoje = realidade_hoje / dias_restantes
+        # Posso Até (Saldo de hoje dividido pelos dias que faltam)
+        posso_ate_gastar_hoje = realidade_hoje / dias_restantes if dias_restantes > 0 else 0.0
         
-        # Projeção de Rombo futura baseada na velocidade do consumo real
+        # Projeção de Rombo futura
         gasto_futuro_projetado = media_real_hoje * dias_restantes
         rombo_estimado = max(gasto_futuro_projetado - realidade_hoje, 0.0)
         
@@ -223,5 +253,5 @@ def calcular_radar_sobrevivencia_real(id_usuario_logado: str, data_inicio, saldo
             "proximo_recebimento": (dt_recebimento + relativedelta(days=30)).strftime("%d/%m/%Y")
         }
     except Exception as e:
-        print(f"❌ Erro na calibração do motor: {e}")
+        print(f"❌ Erro na calibração do motor real: {e}")
         return None
