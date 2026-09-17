@@ -131,20 +131,25 @@ else:
         # Textbox de data inicial 
         data_ultimo = st.date_input("Data do Último Recebimento:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
         
-        # --- CAPTURA DO SALDO REAL EXATO DO NU BANK DO SEU EXTRATO ---
-        df_glob_menu = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
-        
-        # Filtra na memória exatamente as linhas pertencentes à conta 'nu bank'
-        df_glob_menu["banco_filtro"] = df_glob_menu["banco"].str.strip().str.lower()
-        df_filtrado_nubank = df_glob_menu[df_glob_menu["banco_filtro"] == "nu bank"]
-        
-        # Calcula o saldo acumulado exato igualzinho ao seu extrato da outra aba
-        saldo_nubank_real = float(df_filtrado_nubank["valor"].sum()) if not df_filtrado_nubank.empty else 100.86
-        
+        # Dados centralizados: o mesmo DataFrame alimenta o Painel e o Radar.
+        df_global_menu = mod_calculos.buscar_todos_lancamentos_completos(
+            st.session_state.usuario_id
+        )
+
+        # O saldo é calculado exclusivamente pelo mod_calculos.
+        saldo_nubank_real = mod_calculos.calcular_saldo_real_memoria(
+            df_global_menu,
+            "Nu Bank"
+        )
+
         with st.spinner("Sincronizando indicadores com a carteira Nu Bank..."):
-            # Dispara o motor passando o saldo real 
-            dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo, saldo_nubank_real)
-        
+            dados = mod_previsoes.calcular_radar_sobrevivencia_real(
+                st.session_state.usuario_id,
+                data_ultimo,
+                saldo_nubank_real,
+                df_global_menu
+            )
+
         if dados:
             st.markdown("### 🧭 Diagnóstico!")
             
@@ -188,7 +193,6 @@ else:
 
     # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
     elif opcao_menu == "📈 Painel e Extratos":
-        st.title("Painel Financeiro")
         st.title("Painel Financeiro")
         
         # 🚀 VELOCIDADE E SEGURANÇA: Passa o ID único do usuário ativo para o filtro

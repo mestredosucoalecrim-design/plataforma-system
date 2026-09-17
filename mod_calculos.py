@@ -88,6 +88,58 @@ def calcular_resumo_memoria(df: pd.DataFrame) -> dict:
     resumo["saldo"] = resumo["receitas"] + resumo["despesas"]
     return resumo
 
+
+def calcular_saldo_real_memoria(
+    df: pd.DataFrame,
+    banco: str | None = None
+) -> float:
+    """
+    Retorna o saldo real acumulado até a presente data.
+
+    RESPONSABILIDADE:
+        Centralizar o cálculo do saldo para que Painel, Extratos e
+        outros módulos não repitam a mesma regra.
+
+    REGRA:
+        valor > 0 = entrada
+        valor < 0 = saída
+
+    Se banco for informado, o cálculo considera somente aquele banco.
+    """
+    if df.empty or "valor" not in df.columns:
+        return 0.00
+
+    df_trabalho = df.copy()
+
+    if banco and banco != "-- Selecione um Banco --":
+        if "banco" not in df_trabalho.columns:
+            return 0.00
+
+        banco_alvo = (
+            str(banco)
+            .strip()
+            .lower()
+            .replace(" ", "")
+        )
+
+        banco_chave = (
+            df_trabalho["banco"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .str.replace(" ", "", regex=False)
+        )
+
+        df_trabalho = df_trabalho[banco_chave == banco_alvo]
+
+    return float(
+        pd.to_numeric(
+            df_trabalho["valor"],
+            errors="coerce"
+        ).fillna(0.00).sum()
+    )
+
 def obter_maiores_produtos_mes_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
     """Agrupa pelos 5 produtos mais caros do mês para o gráfico."""
     if df_mes.empty or 'valor' not in df_mes.columns or 'nome_produto' not in df_mes.columns:
@@ -200,6 +252,32 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
         return True
     except Exception as e:
         print(f"❌ Erro crítico ao gravar lançamento relacional: {e}")
+        return False
+
+
+def deletar_lancamento_banco(id_lancamento: int) -> bool:
+    """
+    Exclui um lançamento real pelo ID.
+
+    RESPONSABILIDADE:
+        Persistência da tabela lancamentos.
+        A interface não acessa o Supabase diretamente para esta ação.
+    """
+    try:
+        supabase = mod_conexao.criar_conexao()
+
+        (
+            supabase.table("lancamentos")
+            .delete()
+            .eq("id", int(id_lancamento))
+            .execute()
+        )
+
+        st.cache_data.clear()
+        return True
+
+    except Exception as e:
+        print(f"❌ Erro ao excluir lançamento {id_lancamento}: {e}")
         return False
 
 def obter_despesas_por_categoria_memoria(df_mes: pd.DataFrame) -> pd.DataFrame:
