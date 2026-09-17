@@ -310,11 +310,23 @@ def calcular_radar_sobrevivencia_real(
         dt_fim_ciclo = dt_recebimento + relativedelta(days=29)
         dt_proximo_recebimento = dt_recebimento + relativedelta(days=30)
 
-        # Dias decorridos dentro do ciclo, contando o dia inicial.
+        # ---------------------------------------------------------
+        # DIAS DO CICLO — REGRA OFICIAL DO RADAR
+        #
+        # Dia do recebimento = Dia 0.
+        # O dia seguinte ao recebimento = Dia 1.
+        # O último dia antes do próximo recebimento = Dia 30.
+        #
+        # Exemplo:
+        # Recebimento: 10/09
+        # 11/09 = Dia 1
+        # 09/10 = Dia 30
+        # 10/10 = novo recebimento / novo Dia 0
+        # ---------------------------------------------------------
         if hoje < dt_recebimento:
             dias_decorridos_ciclo = 0
         elif hoje <= dt_fim_ciclo:
-            dias_decorridos_ciclo = (hoje - dt_recebimento).days + 1
+            dias_decorridos_ciclo = (hoje - dt_recebimento).days
         else:
             dias_decorridos_ciclo = 30
 
