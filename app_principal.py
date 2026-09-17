@@ -142,7 +142,7 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
         saldo_nubank_real = float(df_filtrado_nubank["valor"].sum()) if not df_filtrado_nubank.empty else 100.86
         
         with st.spinner("Sincronizando indicadores com a carteira Nu Bank..."):
-            # Dispara o motor passando o saldo real validado de R$ 100,86
+            # Dispara o motor passando o saldo real 
             dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo, saldo_nubank_real)
         
         if dados:
