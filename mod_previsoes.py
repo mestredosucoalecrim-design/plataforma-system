@@ -164,7 +164,7 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
 
 def calcular_radar_sobrevivencia_real(id_usuario_logado: str, data_inicio, saldo_real_tela: float) -> dict:
     """
-    Motor matemático puro calibrado pelo bloco de notas do William.
+    Motor matemático .
     Usa o saldo real validado da tela para sincronização de centavos com o Excel.
     """
     try:

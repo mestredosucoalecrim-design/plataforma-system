@@ -160,7 +160,7 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
                 st.caption(f"⏳ Restam no ciclo: **{dados['dias_restantes']} dias**")
                 
             with c_val3:
-                st.metric(label="🚨 Média Real (Sua Velocidade)", value=f"R$ {dados['media_real']:,.2f}/dia")
+                st.metric(label="🚨 Média Real", value=f"R$ {dados['media_real']:,.2f}/dia")
                 st.caption(f"Total gasto no período: **R$ {dados['total_gastos']:,.2f}**")
                 if dados['entradas_extras'] > 0:
                     st.caption(f"🎉 Entradas extras recebidas: **+R$ {dados['entradas_extras']:,.2f}**")
