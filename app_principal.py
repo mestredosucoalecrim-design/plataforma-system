@@ -102,7 +102,7 @@ if not st.session_state.logado:
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO
 # =========================================================================
-else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
+else: 
     st.sidebar.title("S.Y.S.T.E.M v2.0")
     st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
     
@@ -128,7 +128,7 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
         st.markdown("---")
         st.subheader("📊 Marcador de Autonomia Financeira")
         
-        # Sua textbox de data inicial (Célula J15)
+        # Textbox de data inicial 
         data_ultimo = st.date_input("Data do Último Recebimento:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
         
         # --- CAPTURA DO SALDO REAL EXATO DO NU BANK DO SEU EXTRATO ---
@@ -151,8 +151,8 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
             c_val1, c_val2, c_val3 = st.columns(3)
             with c_val1:
                 st.metric(label="🏦 Realidade Hoje (Nu Bank)", value=f"R$ {dados['realidade_hoje']:,.2f}")
-                st.caption(f"Saldo Anterior (Dia 10): **R$ {dados['saldo_anterior_dia_um']:,.2f}**")
-                st.caption(f"Saldo Livre Inicial (Dia 11): **R$ {dados['saldo_para_passar_mes']:,.2f}**")
+                st.caption(f"Saldo Anterior: **R$ {dados['saldo_anterior_dia_um']:,.2f}**")
+                st.caption(f"Saldo Livre Inicial: **R$ {dados['saldo_para_passar_mes']:,.2f}**")
                 
             with c_val2:
                 st.metric(label="🎯 Média Necessária Original", value=f"R$ {dados['media_necessaria']:,.2f}/dia")
@@ -173,7 +173,7 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
             if dados["rombo_estimado"] > 0:
                 st.error(
                     f"🔴 **⚠️ A.T.E.N.Ç.Ã.O:**\n\n"
-                    f"Sua média de gstos, extrapolou. Ele está em **R$ {dados['media_real']:,.2f}/dia**.\n\n"
+                    f"Sua média de gastos, extrapolou. Ele está em **R$ {dados['media_real']:,.2f}/dia**.\n\n"
                     f"Para o saldo durar até o fim do ciclo, mude seu consumo para o teto de **R$ {dados['quanto_pode_gastar_hoje']:.2f}/dia** para evitar o desabastecimento!"
                 )
             else:
