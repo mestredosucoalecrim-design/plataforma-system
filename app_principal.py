@@ -118,87 +118,61 @@ else:
         st.session_state.logado = False
         st.rerun()
 
-    # 🟢 BLOCO COCKPIT: PAINEL DE CONTROLE DIÁRIO (VBA SYNCED)
+        # 🟢 BLOCO COCKPIT: MARCADOR DE AUTONOMIA FINANCEIRA (BLOCO DE NOTAS SYNC)
     if opcao_menu == "🏠 Menu Principal":
         st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
-        st.markdown(f"Olá, **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
+        st.markdown(f"Olá, Comandante **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
         
         st.markdown("---")
-        st.subheader("🔮 Painel de Controle Diário (Radar de Consumo)")
+        st.subheader("📊 Marcador de Autonomia Financeira")
         
-        # Apenas uma caixa de entrada, exatamente como a célula J15 do seu gerenciador Excel
-        data_ultimo = st.date_input("Data do Último Recebimento (Célula J15):", value=pd.Timestamp.now().date() - pd.Timedelta(days=4), key="cal_data_ultimo")
+        # Sua textbox de data inicial (Célula J15)
+        data_ultimo = st.date_input("Data do Último Recebimento:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
         
-        # Dispara o motor enviando a data informada
-        with st.spinner("Conectando ao banco de dados nu bank..."):
+        with st.spinner("Calibrando sensores dinâmicos com a nuvem..."):
             dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo)
-
-            st.write("Debug Direto na Tela:", dados)
-
-        # 🧪 BLOCO ESPICULADOR TEMPORÁRIO (Seu F8 Visual)
-        with st.expander("🔍 Rastreamento de Variáveis Internas (Modo Depuração)", expanded=True):
-            st.write("Compare estes números com as células da sua planilha para achar o erro:")
-            if dados:
-                st.json(dados) # Mostra todas as variáveis calculadas pelo motor de uma vez
-            else:
-                st.error("O motor retornou vazio (None)!")
-
+        
         if dados:
-            st.markdown("### 🧭 Indicadores Operacionais")
+            st.markdown("### 🧭 Diagnóstico do Manche")
             
-            # Linha 1: Prazos e Calendário
-            c_dt1, c_dt2, c_dt3, c_dt4 = st.columns(4)
-            c_dt1.metric(label="🗓️ Último Recebimento", value=dados["ultimo_recebimento"])
-            c_dt2.metric(label="⏱️ Dias se Passaram", value=f"{dados['dias_passados']} Dias")
-            c_dt3.metric(label="🗓️ Próximo Recebimento", value=dados["proximo_recebimento"])
-            c_dt4.metric(label="⏳ Dias que Faltam", value=f"{dados['dias_faltam']} Dias")
-            
-            st.markdown("---")
-            
-            # Linha 2: Diagnóstico de Caixa (Nu Bank focado)
+            # Painel com os nomes exatos do seu bloco de notas
             c_val1, c_val2, c_val3 = st.columns(3)
             with c_val1:
-                # Sua label Roxa do VBA (Realidade Hoje)
-                st.metric(label="💜 Realidade Hoje (nu bank)", value=f"R$ {dados['realidade_hoje']:,.2f}")
-                st.caption(f"Perspectiva teórica esperada: **R$ {dados['perspectiva_hoje']:,.2f}**")
+                st.metric(label="🏦 Realidade Hoje (Nu Bank)", value=f"R$ {dados['realidade_hoje']:,.2f}")
+                st.caption(f"Saldo Anterior (Dia 10): **R$ {dados['saldo_anterior_dia_um']:,.2f}**")
+                st.caption(f"Saldo Livre Inicial (Dia 11): **R$ {dados['saldo_para_passar_mes']:,.2f}**")
                 
             with c_val2:
-                st.metric(label="🎯 Média Necessária (Teto)", value=f"R$ {dados['media_necessaria']:,.2f}/dia")
-                st.caption("Meta calculada sobre a base H24")
+                st.metric(label="🎯 Média Necessária Original", value=f"R$ {dados['media_necessaria']:,.2f}/dia")
+                st.caption(f"⏱️ Se passaram: **{dados['dias_passados']} dias**")
+                st.caption(f"⏳ Restam no ciclo: **{dados['dias_restantes']} dias**")
                 
             with c_val3:
-                # Sua label Vermelha do VBA (Média Hoje)
-                # Compara a velocidade real com a necessária para gerar o Delta
-                diff = dados['media_hoje'] - dados['media_necessaria']
-                st.metric(
-                    label="🚨 Média Hoje (Velocidade)", 
-                    value=f"R$ {dados['media_hoje']:,.2f}/dia",
-                    delta=f"+R$ {diff:,.2f} ACIMA DA META" if diff > 0 else f"-R$ {abs(diff):,.2f} ABAIXO DA META",
-                    delta_color="inverse" if diff > 0 else "normal"
-                )
+                st.metric(label="🚨 Média Real (Sua Velocidade)", value=f"R$ {dados['media_real']:,.2f}/dia")
+                st.caption(f"Total gasto no período: **R$ {dados['total_gastos']:,.2f}**")
+                if dados['entradas_extras'] > 0:
+                    st.caption(f"🎉 Entradas extras recebidas: **+R$ {dados['entradas_extras']:,.2f}**")
             
             st.markdown("---")
             
-            # Linha 3: Projeção de Fim de Mês e Tomada de Decisão
-            st.info(f"🔄 **Posso até gastar:** R$ {dados['posso_ate']:,.2f} por dia de hoje em diante para o saldo não zerar.")
-            st.warning(f"📉 **Projeção de Consumo:** Se mantiver o ritmo, você gastará um total de **R$ {dados['vou_gastar']:,.2f}** nos próximos {dados['dias_faltam']} dias.")
+            # O "OBBAAAA" ou o "Puxão de Orelha" baseado na rota
+            st.info(f"🔄 **Ajuste de Rota:** De hoje em diante, você pode gastar até **R$ {dados['quanto_pode_gastar_hoje']:,.2f} por dia** para o dinheiro durar.")
             
-            # Tratamento da cor do "Gastarei a mais" (Parte 4 do seu VBA)
-            # Se gastarei_a_mais for menor que 0, significa que o saldo final ficará negativo (rombo)
-            if dados["gastarei_a_mais"] < 0:
+            if dados["rombo_estimado"] > 0:
                 st.error(
-                    f"🔴 **Alerta de Rombo Orçamentário:**\n\n"
-                    f"Sua projeção ultrapassará o saldo disponível. Seu saldo final estimado em conta será de **R$ {dados['gastarei_a_mais']:,.2f}**.\n\n"
-                    f"💡 **Ação Corretiva:** Puxe o freio urgente! Reduza seus gastos para o teto de **R$ {dados['posso_ate']:.2f}/dia**."
+                    f"🔴 **⚠️ PUXÃO DE ORELHA FINANCEIRO:**\n\n"
+                    f"Você gastou um total de **R$ {dados['total_gastos']:,.2f}** nos últimos {dados['dias_passados']} dias (Média de R$ {dados['media_real']:,.2f}/dia).\n\n"
+                    f"Se você continuar nessa velocidade, seu dinheiro vai acabar por volta do dia **{(datetime.now() + relativedelta(days=int(dados['realidade_hoje']/dados['media_real']))).strftime('%d/%m')}** e você terá um **rombo estimado de R$ {dados['rombo_estimado']:,.2f}**!\n\n"
+                    f"💡 **Ação Corretiva:** Puxe o freio de mão! Reduza seu gasto diário urgentemente para o novo limite de **R$ {dados['quanto_pode_gastar_hoje']:.2f}/dia** para o tanque durar."
                 )
             else:
                 st.success(
-                    f"🟢 **Orçamento Seguro:**\n\n"
-                    f"Mantendo esse ritmo, você terminará o ciclo com um saldo positivo de **R$ {dados['gastarei_a_mais']:,.2f}** no bolso!"
+                    f"🟢 **OBBBAAAA! Rota Segura!**\n\n"
+                    f"Graças ao saldo atual e às entradas extras, seu orçamento se estabilizou. "
+                    f"Mantendo seus gastos abaixo de **R$ {dados['quanto_pode_gastar_hoje']:,.2f} por dia**, você fechará o mês com folga!"
                 )
         else:
-            st.warning("📋 Dados insuficientes na conta Nu Bank para este período de teste.")
-
+            st.warning("📋 Dados insuficientes para realizar o cálculo.")
 
     # 🟢 AJUSTADO: Mudamos de 'if' para 'elif' para o sistema Hide funcionar e limpar a tela anterior!
     elif opcao_menu == "📈 Painel e Extratos":
