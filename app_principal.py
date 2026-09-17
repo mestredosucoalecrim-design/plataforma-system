@@ -123,7 +123,7 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
     # -------------------------------------------------------------------------
     if opcao_menu == "🏠 Menu Principal":
         st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
-        st.markdown(f"Olá, Comandante **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
+        st.markdown(f"Olá, **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
         
         st.markdown("---")
         st.subheader("📊 Marcador de Autonomia Financeira")
@@ -146,7 +146,7 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
             dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo, saldo_nubank_real)
         
         if dados:
-            st.markdown("### 🧭 Diagnóstico do Manche")
+            st.markdown("### 🧭 Diagnóstico!")
             
             c_val1, c_val2, c_val3 = st.columns(3)
             with c_val1:
@@ -172,13 +172,13 @@ else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
             
             if dados["rombo_estimado"] > 0:
                 st.error(
-                    f"🔴 **⚠️ PUXÃO DE ORELHA FINANCEIRO:**\n\n"
-                    f"Sua velocidade atual está em **R$ {dados['media_real']:,.2f}/dia**.\n\n"
+                    f"🔴 **⚠️ A.T.E.N.Ç.Ã.O:**\n\n"
+                    f"Sua média de gstos, extrapolou. Ele está em **R$ {dados['media_real']:,.2f}/dia**.\n\n"
                     f"Para o saldo durar até o fim do ciclo, mude seu consumo para o teto de **R$ {dados['quanto_pode_gastar_hoje']:.2f}/dia** para evitar o desabastecimento!"
                 )
             else:
                 st.success(
-                    f"🟢 **OBBBAAAA! Rota Segura!**\n\n"
+                    f"🟢 **Rota Segura!**\n\n"
                     f"Graças ao saldo atual de **R$ {dados['realidade_hoje']:,.2f}** e às entradas extras, seu orçamento se estabilizou.\n\n"
                     f"Gastando até **R$ {dados['quanto_pode_gastar_hoje']:,.2f} por dia**, você fechará o mês com total folga!"
                 )
