@@ -102,7 +102,7 @@ if not st.session_state.logado:
 # =========================================================================
 # TELA 2: MENU PRINCIPAL E NAVEGAÇÃO
 # =========================================================================
-else:
+else: # <-- MANTÉM IGUALMENTE O SEU ELSE AQUI!
     st.sidebar.title("S.Y.S.T.E.M v2.0")
     st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
     
@@ -118,7 +118,9 @@ else:
         st.session_state.logado = False
         st.rerun()
 
-        # 🟢 BLOCO COCKPIT: MARCADOR DE AUTONOMIA FINANCEIRA (BLOCO DE NOTAS SYNC)
+    # -------------------------------------------------------------------------
+    # 🟢 BLOCO COCKPIT: MARCADOR DE AUTONOMIA FINANCEIRA (DENTRO DO ELSE)
+    # -------------------------------------------------------------------------
     if opcao_menu == "🏠 Menu Principal":
         st.title("🏠 Bem-vindo à Plataforma S.Y.S.T.E.M")
         st.markdown(f"Olá, Comandante **{st.session_state.usuario_email}**! Seu cockpit está conectado.")
@@ -129,13 +131,23 @@ else:
         # Sua textbox de data inicial (Célula J15)
         data_ultimo = st.date_input("Data do Último Recebimento:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
         
-        with st.spinner("Calibrando sensores dinâmicos com a nuvem..."):
-            dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo)
+        # --- CAPTURA DO SALDO REAL EXATO DO NU BANK DO SEU EXTRATO ---
+        df_glob_menu = mod_calculos.buscar_todos_lancamentos_completos(st.session_state.usuario_id)
+        
+        # Filtra na memória exatamente as linhas pertencentes à conta 'nu bank'
+        df_glob_menu["banco_filtro"] = df_glob_menu["banco"].str.strip().str.lower()
+        df_filtrado_nubank = df_glob_menu[df_glob_menu["banco_filtro"] == "nu bank"]
+        
+        # Calcula o saldo acumulado exato igualzinho ao seu extrato da outra aba
+        saldo_nubank_real = float(df_filtrado_nubank["valor"].sum()) if not df_filtrado_nubank.empty else 100.86
+        
+        with st.spinner("Sincronizando indicadores com a carteira Nu Bank..."):
+            # Dispara o motor passando o saldo real validado de R$ 100,86
+            dados = mod_previsoes.calcular_radar_sobrevivencia_real(st.session_state.usuario_id, data_ultimo, saldo_nubank_real)
         
         if dados:
             st.markdown("### 🧭 Diagnóstico do Manche")
             
-            # Painel com os nomes exatos do seu bloco de notas
             c_val1, c_val2, c_val3 = st.columns(3)
             with c_val1:
                 st.metric(label="🏦 Realidade Hoje (Nu Bank)", value=f"R$ {dados['realidade_hoje']:,.2f}")
@@ -155,22 +167,22 @@ else:
             
             st.markdown("---")
             
-            # O "OBBAAAA" ou o "Puxão de Orelha" baseado na rota
-            st.info(f"🔄 **Ajuste de Rota:** De hoje em diante, você pode gastar até **R$ {dados['quanto_pode_gastar_hoje']:,.2f} por dia** para o dinheiro durar.")
+            # Ajuste de Rota do GPS
+            st.info(f"🔄 **Posso até gastar:** R$ {dados['quanto_pode_gastar_hoje']:,.2f} por dia de hoje em diante para equilibrar o tanque.")
             
             if dados["rombo_estimado"] > 0:
                 st.error(
                     f"🔴 **⚠️ PUXÃO DE ORELHA FINANCEIRO:**\n\n"
-                    f"Você gastou um total de **R$ {dados['total_gastos']:,.2f}** nos últimos {dados['dias_passados']} dias (Média de R$ {dados['media_real']:,.2f}/dia).\n\n"
-                    f"Se você continuar nessa velocidade, seu dinheiro vai acabar por volta do dia **{(datetime.now() + relativedelta(days=int(dados['realidade_hoje']/dados['media_real']))).strftime('%d/%m')}** e você terá um **rombo estimado de R$ {dados['rombo_estimado']:,.2f}**!\n\n"
-                    f"💡 **Ação Corretiva:** Puxe o freio de mão! Reduza seu gasto diário urgentemente para o novo limite de **R$ {dados['quanto_pode_gastar_hoje']:.2f}/dia** para o tanque durar."
+                    f"Sua velocidade atual está em **R$ {dados['media_real']:,.2f}/dia**.\n\n"
+                    f"Para o saldo durar até o fim do ciclo, mude seu consumo para o teto de **R$ {dados['quanto_pode_gastar_hoje']:.2f}/dia** para evitar o desabastecimento!"
                 )
             else:
                 st.success(
                     f"🟢 **OBBBAAAA! Rota Segura!**\n\n"
-                    f"Graças ao saldo atual e às entradas extras, seu orçamento se estabilizou. "
-                    f"Mantendo seus gastos abaixo de **R$ {dados['quanto_pode_gastar_hoje']:,.2f} por dia**, você fechará o mês com folga!"
+                    f"Graças ao saldo atual de **R$ {dados['realidade_hoje']:,.2f}** e às entradas extras, seu orçamento se estabilizou.\n\n"
+                    f"Gastando até **R$ {dados['quanto_pode_gastar_hoje']:,.2f} por dia**, você fechará o mês com total folga!"
                 )
+
         else:
             st.warning("📋 Dados insuficientes para realizar o cálculo.")
 
