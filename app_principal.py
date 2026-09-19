@@ -33,7 +33,7 @@ if "logado" not in st.session_state:
 if "ano_atual" not in st.session_state:
     st.session_state.ano_atual = datetime.now().date().today().year
 if "mes_atual" not in st.session_state:
-    st.session_state.mes_atual = datetime.date.today().month
+    st.session_state.mes_atual = datetime.now().date().today().month
 
 NOME_MESES = [
     "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
