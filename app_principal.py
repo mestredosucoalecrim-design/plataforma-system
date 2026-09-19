@@ -5,6 +5,8 @@ import mod_calculos
 import mod_estruturas
 import mod_previsoes
 import pandas as pd
+from datetime import datetime, timedelta
+
 
 # Injeta um estilo CSS para esconder o menu do topo e o botão de visualização
 st.markdown(
@@ -129,7 +131,13 @@ else:
         st.subheader("📊 Marcador de Autonomia Financeira")
         
         # Textbox de data inicial 
-        data_ultimo = st.date_input("Data do Último Recebimento:", value=pd.Timestamp.now().date() - pd.Timedelta(days=5), key="cal_data_ultimo")
+        # Correção: Força o uso da data local do sistema operacional, sem as distorções do Pandas
+        data_ultimo = st.date_input(
+    "Data do Último Recebimento:", 
+    value=datetime.now().date() - timedelta(days=7), # Ajuste aqui para o padrão de dias que você quer exibir ao abrir
+    key="cal_data_ultimo"
+)
+
         
         # Dados centralizados: o mesmo DataFrame alimenta o Painel e o Radar.
         df_global_menu = mod_calculos.buscar_todos_lancamentos_completos(
