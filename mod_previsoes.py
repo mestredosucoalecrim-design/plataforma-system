@@ -162,8 +162,6 @@ def excluir_parcela_futura_definitivo(id_parcela: int, id_usuario_logado: str) -
         return False
         
 
-
-
 def buscar_detalhe_compromissos_abertos(
     id_usuario_logado: str
 ) -> list:
@@ -233,34 +231,32 @@ def calcular_radar_sobrevivencia_real(
         if df_lancamentos is None:
             raise ValueError("O DataFrame de lançamentos não foi informado.")
 
-        # ---------------------------------------------------------
-        # 1. NORMALIZAÇÃO DA DATA DE INÍCIO
+                # ---------------------------------------------------------
+        # 1. NORMALIZAÇÃO DA DATA DE INÍCIO (BLINDADA CONTRA FUSO DO STREAMLIT)
         # ---------------------------------------------------------
         if isinstance(data_inicio, str):
             data_inicio = data_inicio.strip()
-
             formatos = ("%Y-%m-%d", "%d/%m/%Y")
-
             dt_recebimento = None
+            
             for formato in formatos:
                 try:
-                    dt_recebimento = datetime.strptime(
-                        data_inicio, formato
-                    ).date()
+                    # Converte puramente o texto, ignorando fusos automáticos
+                    dt_recebimento = datetime.strptime(data_inicio, formato).date()
                     break
                 except ValueError:
                     continue
 
             if dt_recebimento is None:
-                raise ValueError(
-                    "Data de início inválida. Use DD/MM/AAAA ou AAAA-MM-DD."
-                )
+                raise ValueError("Data de início inválida. Use DD/MM/AAAA ou AAAA-MM-DD.")
 
-        elif isinstance(data_inicio, datetime):
-            dt_recebimento = data_inicio.date()
+        # Se o Streamlit já enviou como um objeto datetime/date com fuso modificado
         elif hasattr(data_inicio, "year") and hasattr(data_inicio, "month") and hasattr(data_inicio, "day"):
-            # Compatível com datetime.date e objetos equivalentes.
-            dt_recebimento = data_inicio
+            # Caso tenha vindo de um st.date_input ou datetime com fuso, garantimos que seja apenas a data declarada
+            if isinstance(data_inicio, datetime):
+                dt_recebimento = data_inicio.date()
+            else:
+                dt_recebimento = data_inicio
         else:
             raise ValueError("Data de início inválida.")
 
@@ -330,10 +326,11 @@ def calcular_radar_sobrevivencia_real(
         else:
             dias_decorridos_ciclo = 30
 
-        dias_restantes_ciclo = max(
-            30 - dias_decorridos_ciclo,
-            0
-        )
+        # Aplica o limite comercial de 30 dias para evitar erros em meses longos
+        dias_decorridos_ciclo = min(dias_decorridos_ciclo, 30)
+
+        # Se você quer garantir 23 dias restantes quando se passaram 7 dias:
+        dias_restantes_ciclo = max(30 - dias_decorridos_ciclo, 0)
 
         # ---------------------------------------------------------
         # 5. BANCO DO RADAR
@@ -425,7 +422,7 @@ def calcular_radar_sobrevivencia_real(
 
             dias_gastos_periodo = (
                 hoje - dia_seguinte
-            ).days + 1
+            ).days +1
         else:
             df_periodo = df_radar.iloc[0:0].copy()
             dias_gastos_periodo = 0
