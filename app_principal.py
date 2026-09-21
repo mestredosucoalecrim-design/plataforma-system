@@ -1,5 +1,5 @@
 import streamlit as st
-import datetime
+import datetime as dt_module
 import plotly.express as px
 import mod_calculos
 import mod_estruturas
@@ -452,7 +452,7 @@ else:
                 # Inicializa em 0.00 para forçar a BIOS a digitar o valor real
                 valor_mov = st.number_input("4. Valor do Lançamento (R$):", min_value=0.00, step=1.00, format="%.2f", value=0.00)
             with col_d:
-                data_mov = st.date_input("5. Data do Gasto:", datetime.date.today())
+                data_mov = st.date_input("5. Data do Gasto:",dt_module.date.today())
                 
             st.markdown("---")
             
