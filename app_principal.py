@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import mod_aplicacoes
 import mod_fontes
 import mod_faq_aplicacoes
+import mod_data
 
 
 # 1. Configuração de Layout da Página
@@ -23,9 +24,9 @@ st.set_page_config(
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "ano_atual" not in st.session_state:
-    st.session_state.ano_atual = datetime.now().date().today().year
+    st.session_state.ano_atual = mod_data.data_atual().year
 if "mes_atual" not in st.session_state:
-    st.session_state.mes_atual = datetime.now().date().today().month
+    st.session_state.mes_atual = mod_data.data_atual().month
 
 NOME_MESES = [
     "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -137,7 +138,7 @@ else:
 
         data_ultimo = st.date_input(
         "",
-        value=datetime.now().date() - timedelta(days=7),
+        value=mod_data.data_atual_menos_dias(7),
         key="cal_data_ultimo",
         label_visibility="collapsed"
 )
@@ -473,7 +474,10 @@ else:
                 # Inicializa em 0.00 para forçar a BIOS a digitar o valor real
                 valor_mov = st.number_input("4. Valor do Lançamento (R$):", min_value=0.00, step=1.00, format="%.2f", value=0.00)
             with col_d:
-                data_mov = st.date_input("5. Data do Gasto:",dt_module.date.today())
+                data_mov = st.date_input(
+                    "5. Data do Gasto:",
+                    value=mod_data.data_atual()
+                )
                 
             st.markdown("---")
             
@@ -710,7 +714,11 @@ else:
             with col_qtd:
                 qtd_parc = st.number_input("Quantidade Total de Parcelas:", min_value=1, max_value=120, value=1, step=1, key="num_prev_qtd")
             with col_data:
-                data_prim = st.date_input("Data do 1º Vencimento:", key="date_prev_vcto")
+                data_prim = st.date_input(
+                    "Data do 1º Vencimento:",
+                    value=mod_data.data_atual(),
+                    key="date_prev_vcto"
+                )
                 
             if st.button("Gerar Projeção de Parcelas", type="primary", use_container_width=True, key="btn_gerar_parcelas"):
                 if desc_item and cat_escolhida and vlr_parc > 0:
@@ -1044,8 +1052,9 @@ else:
             # =====================================================
 
             data_pesquisa = st.date_input(
-            "Data da pesquisa",
-            key="data_pesquisa_aplicacao"
+                "Data da pesquisa",
+                value=mod_data.data_atual(),
+                key="data_pesquisa_aplicacao"
             )
         
             if st.button(
