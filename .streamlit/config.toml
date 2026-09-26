@@ -1,13 +1,24 @@
-[theme]
+[theme.light]
 primaryColor = "#FF4B4B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans serif"
 
+[theme.dark]
+primaryColor = "#FF4B4B"
 backgroundColor = "#0E1117"
-
 secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
+font = "sans serif"
 
+[theme.light.sidebar]
+backgroundColor = "#262730"
 textColor = "#FAFAFA"
 
-font = "sans serif"
+[theme.dark.sidebar]
+backgroundColor = "#262730"
+textColor = "#FAFAFA"
 
 [client]
 # Esconde o menu de opções do canto superior direito (onde fica o "View source")
@@ -19,4 +30,4 @@ watchmode = false
 
 [ui]
 # Esconde o botão e opções de visualização de código-fonte
-hideTopBarMenu = true
+hideTopBarMenu = false
