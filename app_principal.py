@@ -1,4 +1,3 @@
-from turtle import color
 import streamlit as st
 import datetime as dt_module
 import plotly.express as px
