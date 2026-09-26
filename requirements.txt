@@ -1,3 +1,4 @@
 plotly
 supabase
 python-dotenv
+python-bcb
