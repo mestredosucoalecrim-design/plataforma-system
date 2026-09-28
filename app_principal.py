@@ -99,7 +99,16 @@ if not st.session_state.logado:
 # =========================================================================
 else: 
     st.sidebar.title("S.Y.S.T.E.M v2.0")
-    st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
+    #st.sidebar.write("👤 Usuário: **William Melo: Administrador**")
+    
+    # Pega o e-mail salvo na sessão (ou exibe um valor padrão caso não encontre)
+    email_atual = st.session_state.get("usuario_email", "Usuário")
+
+    # (Opcional) Se quiser deixar o nome mais amigável tirando o domínio do e-mail (ex: 'william@email.com' vira 'William'):
+    # nome_amigavel = email_atual.split('@')[0].capitalize()
+
+    st.sidebar.write(f"👤 Usuário: **{email_atual}**")
+
 
     def formatar_moeda_br(valor):
         return (
