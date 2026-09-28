@@ -185,7 +185,7 @@ def realizar_login_real_supabase(email_usuario: str, senha_usuario: str) -> dict
             return {"status": "erro", "mensagem": "⚠️ E-mail ou Senha incorretos!"}
         return {"status": "erro", "mensagem": f"❌ Falha de comunicação: {e}"}
 
-def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario_logado: str) -> bool:
+def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario_logado: str):
     """Cadastra um novo produto deixando o ID por conta do autoincremento automático do Supabase."""
     try:
         supabase = mod_conexao.criar_conexao()
@@ -194,30 +194,22 @@ def cadastrar_novo_produto_real(nome_produto: str, id_categoria: int, id_usuario
         # 1. Verifica se ESTE usuário já tem esse produto cadastrado
         checagem = supabase.table("produtos").select("id")\
             .eq("nome_produto", prod_limpo).eq("usuario_id", id_usuario_logado).execute()
-        if checagem.data and len(checagem.data) > 0:
-            return False
             
-        # 2. Insere SEM passar o campo "id" (O Supabase gera o número sozinho e sequencial)
+        if checagem.data and len(checagem.data) > 0:
+            return "duplicado"  # CORRIGIDO: Agora retorna a string que o Streamlit espera
+            
+        # 2. Insere SEM passar o campo "id"
         supabase.table("produtos").insert({
             "nome_produto": prod_limpo,
             "categoria_id": int(id_categoria),
             "usuario_id": id_usuario_logado
         }).execute()
+        
         return True
+        
     except Exception as e:
         print(f"❌ Erro ao cadastrar produto: {e}")
-        return False
-            
-        # 2. Insere SEM passar o campo "id" (O Supabase vai gerar o ID sozinho)
-        supabase.table("produtos").insert({
-            "nome_produto": prod_limpo,
-            "categoria_id": int(id_categoria),
-            "usuario_id": id_usuario_logado
-        }).execute()
-        return True
-    except Exception as e:
-        print(f"Erro ao cadastrar produto: {e}")
-        return False
+        return str(e)  # CORRIGIDO: Retorna a mensagem real do erro para o Streamlit exibir
 
 def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, tipo: str, data_lancamento, id_usuario_logado: str) -> bool:
     """Grava o novo lançamento deixando o ID autoincremento por conta do Supabase."""
