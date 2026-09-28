@@ -244,7 +244,7 @@ def registrar_movimentacao_banco(banco: str, nome_produto: str, valor: float, ti
         return True
     except Exception as e:
         print(f"❌ Erro crítico ao gravar lançamento relacional: {e}")
-        return False
+        return str(e)
 
 
 def deletar_lancamento_banco(id_lancamento: int) -> bool:
