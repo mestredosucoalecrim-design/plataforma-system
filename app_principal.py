@@ -105,7 +105,7 @@ else:
     # (Opcional) Se quiser deixar o nome mais amigável tirando o domínio do e-mail (ex: 'william@email.com' vira 'William'):
     nome_amigavel = email_atual.split('@')[0].capitalize()
 
-    st.sidebar.write(f"👤 Usuário: **{email_atual}**")
+    st.sidebar.write(f"👤 Usuário: **{nome_amigavel}**")
     def formatar_moeda_br(valor):
         return (
         f"R$ {valor:,.2f}"
