@@ -1065,6 +1065,43 @@ else:
                 value=mod_data.data_atual(),
                 key="data_pesquisa_aplicacao"
             )
+
+            # =============================================================
+            # NOVAS PEQUENAS APLICAÇÕES
+            # =============================================================
+
+            pequenas_aplicacoes = st.radio(
+                "Você deseja fazer novas pequenas aplicações nesse período?",
+                ["Não", "Sim"],
+                horizontal=True,
+                key="pequenas_aplicacoes_aplicacao"
+            )
+
+            valor_pequena_aplicacao = None
+            taxa_pequena_aplicacao = None
+
+            if pequenas_aplicacoes == "Sim":
+
+                valor_pequena_aplicacao = st.number_input(
+                    "Valor da pequena aplicação (R$)",
+                    min_value=0.01,
+                    step=50.00,
+                    format="%.2f",
+                    value=None,
+                    placeholder="Digite o valor mensal",
+                    key="valor_pequena_aplicacao"
+                )
+
+                taxa_pequena_aplicacao = st.number_input(
+                    "Taxa da pequena aplicação (% do CDI)",
+                    min_value=0.01,
+                    step=1.00,
+                    format="%.2f",
+                    value=None,
+                    placeholder="Digite a taxa",
+                    key="taxa_pequena_aplicacao"
+                )
+
         
             if st.button(
                 "🧮 Calcular Simulação",
@@ -1354,6 +1391,207 @@ else:
                                 f"{data_final_3.strftime('%d/%m/%Y')}"
                                 )
 
+                            # =================================================
+                            # CÁLCULO — PEQUENAS APLICAÇÕES MENSAIS
+                            # =================================================
+
+                            pequenas_aplicacoes_calculadas = []
+
+                            if pequenas_aplicacoes == "Sim":
+
+                                if (
+                                    valor_pequena_aplicacao is None
+                                    or taxa_pequena_aplicacao is None
+                                ):
+                                    st.warning(
+                                        "Informe o valor e a taxa das pequenas "
+                                        "aplicações antes de calcular."
+                                    )
+
+                                else:
+
+                                    taxa_anual_pequena = (
+                                        mod_aplicacoes.calcular_taxa_ofertada(
+                                            cdi_anual,
+                                            float(taxa_pequena_aplicacao)
+                                        )
+                                    )
+
+                                    data_final_pequenas = (
+                                        pd.to_datetime(data_pesquisa)
+                                        + pd.DateOffset(months=12)
+                                    )
+
+                                    for numero_aplicacao in range(1, 13):
+
+                                        data_inicio_pequena = (
+                                            pd.to_datetime(data_pesquisa)
+                                            + pd.DateOffset(months=numero_aplicacao)
+                                        )
+
+                                        prazo_pequena = 13 - numero_aplicacao
+
+                                        simulacao_pequena = (
+                                            mod_aplicacoes.criar_aplicacao(
+                                                valor=float(
+                                                    valor_pequena_aplicacao
+                                                ),
+                                                taxa_anual=(
+                                                    taxa_anual_pequena / 100
+                                                ),
+                                                quantidade_meses=prazo_pequena,
+                                                data_aplicacao=(
+                                                    data_inicio_pequena.date()
+                                                )
+                                            )
+                                        )
+
+                                        saldo_final_pequena = (
+                                            simulacao_pequena.iloc[-1]["Saldo"]
+                                        )
+
+                                        rendimento_pequena = (
+                                            saldo_final_pequena
+                                            - float(valor_pequena_aplicacao)
+                                        )
+
+                                        pequenas_aplicacoes_calculadas.append({
+                                            "numero": numero_aplicacao,
+                                            "data_inicio": data_inicio_pequena,
+                                            "prazo": prazo_pequena,
+                                            "valor": float(
+                                                valor_pequena_aplicacao
+                                            ),
+                                            "rendimento": float(
+                                                rendimento_pequena
+                                            ),
+                                            "saldo_final": float(
+                                                saldo_final_pequena
+                                            )
+                                        })
+
+                                    valor_total_pequenas = sum(
+                                        item["valor"]
+                                        for item in pequenas_aplicacoes_calculadas
+                                    )
+
+                                    rendimento_total_pequenas = sum(
+                                        item["rendimento"]
+                                        for item in pequenas_aplicacoes_calculadas
+                                    )
+
+                                    saldo_final_pequenas = sum(
+                                        item["saldo_final"]
+                                        for item in pequenas_aplicacoes_calculadas
+                                    )
+
+                                    st.markdown("---")
+                                    st.subheader(
+                                        "Resultado das Pequenas Aplicações"
+                                    )
+
+                                    st.write(
+                                        f"**Quantidade de aplicações:** "
+                                        f"{len(pequenas_aplicacoes_calculadas)}"
+                                    )
+
+                                    st.write(
+                                        f"**Valor de cada aplicação:** "
+                                        f"{formatar_moeda_br(valor_pequena_aplicacao)}"
+                                    )
+
+                                    st.write(
+                                        f"**Valor total aplicado:** "
+                                        f"**{formatar_moeda_br(valor_total_pequenas)}**"
+                                    )
+
+                                    st.write(
+                                        f"**Taxa:** "
+                                        f"{taxa_pequena_aplicacao:.2f}% do CDI"
+                                    )
+
+                                    st.write(
+                                        f"**Rendimento estimado:** "
+                                        f"**{formatar_moeda_br(rendimento_total_pequenas)}**"
+                                    )
+
+                                    st.write(
+                                        f"**Saldo final estimado:** "
+                                        f"**{formatar_moeda_br(saldo_final_pequenas)}**"
+                                    )
+
+                                    st.write(
+                                        f"**Data final da simulação:** "
+                                        f"{data_final_pequenas.strftime('%d/%m/%Y')}"
+                                    )
+
+                                    st.caption(
+                                        "As pequenas aplicações são calculadas "
+                                        "individualmente. Cada nova aplicação "
+                                        "começa em um mês diferente e todas "
+                                        "consideram o mesmo término da simulação."
+                                    )
+
+                            # =================================================
+                            # RESULTADO CONSOLIDADO
+                            # =================================================
+
+                            valor_total_consolidado = float(valor_1)
+                            rendimento_total_consolidado = float(
+                                rendimento_total_1
+                            )
+
+                            if (
+                                valor_2 is not None
+                                and taxa_2 is not None
+                                and prazo_2 is not None
+                            ):
+                                valor_total_consolidado += float(valor_2)
+                                rendimento_total_consolidado += float(
+                                    rendimento_total_2
+                                )
+
+                            if (
+                                valor_3 is not None
+                                and taxa_3 is not None
+                                and prazo_3 is not None
+                            ):
+                                valor_total_consolidado += float(valor_3)
+                                rendimento_total_consolidado += float(
+                                    rendimento_total_3
+                                )
+
+                            if pequenas_aplicacoes_calculadas:
+                                valor_total_consolidado += (
+                                    valor_total_pequenas
+                                )
+                                rendimento_total_consolidado += (
+                                    rendimento_total_pequenas
+                                )
+
+                            saldo_final_consolidado = (
+                                valor_total_consolidado
+                                + rendimento_total_consolidado
+                            )
+
+                            st.markdown("---")
+                            st.subheader("Resultado Consolidado")
+
+                            st.write(
+                                f"**Total aplicado:** "
+                                f"**{formatar_moeda_br(valor_total_consolidado)}**"
+                            )
+
+                            st.write(
+                                f"**Rendimento estimado total:** "
+                                f"**{formatar_moeda_br(rendimento_total_consolidado)}**"
+                            )
+
+                            st.write(
+                                f"**Saldo final estimado:** "
+                                f"**{formatar_moeda_br(saldo_final_consolidado)}**"
+                            )
+
                             #=============================================
                             # PREMISSA
                             # =============================================
@@ -1363,6 +1601,13 @@ else:
                             st.caption("Estimativa matemática baseada no CDI de referência "
                             "e na manutenção das taxas utilizadas na simulação "
                             "durante todo o período."
+                            )
+
+                            st.caption(
+                                "Fonte do CDI: Banco Central do Brasil / SGS — "
+                                "série 4389 (CDI anualizado, base 252 dias úteis). "
+                                f"Data de referência: "
+                                f"{pd.to_datetime(dados_cdi['data_referencia']).strftime('%d/%m/%Y')}."
                             )
 
                             # A simulação foi concluída.
