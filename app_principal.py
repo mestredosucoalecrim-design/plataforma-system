@@ -1,11 +1,9 @@
 import streamlit as st
-import datetime as dt_module
 import plotly.express as px
 import mod_calculos
 import mod_estruturas
 import mod_previsoes
 import pandas as pd
-from datetime import datetime, timedelta
 import mod_aplicacoes
 import mod_fontes
 import mod_faq_aplicacoes
@@ -855,7 +853,6 @@ else:
 
         st.title("💰 Aplicações Financeiras")
 
-
         # =====================================================
         # PRIMEIRA TELA — APRESENTAÇÃO
         # =====================================================
@@ -866,19 +863,19 @@ else:
         ):
 
             st.write(
-            "Faça uma simulação para estimar quanto uma aplicação "
-            "poderá acumular ao longo de determinado período."
-        )
+                "Faça uma simulação para estimar quanto uma aplicação "
+                "poderá acumular ao longo de determinado período."
+            )
 
             st.write(
-            "Informe a instituição, a taxa oferecida, o valor "
-            "que pretende aplicar e o prazo."
-        )
+                "Informe o valor, a taxa oferecida e o prazo. "
+                "Aportes e retiradas de rendimentos são opcionais."
+            )
 
             st.write(
-            "O S.Y.S.T.E.M. utiliza o CDI de referência consultado "
-            "no Banco Central do Brasil para realizar a simulação."
-        )
+                "O S.Y.S.T.E.M. utiliza o CDI de referência consultado "
+                "no Banco Central do Brasil para realizar a simulação."
+            )
 
             if st.button(
                 "▶️ Iniciar Simulação",
@@ -887,177 +884,57 @@ else:
                 key="btn_iniciar_simulacao_aplicacoes"
             ):
                 st.session_state[
-                "aplicacoes_iniciar_simulacao"
+                    "aplicacoes_iniciar_simulacao"
                 ] = True
+                st.rerun()
 
         # =====================================================
         # SEGUNDA TELA — SIMULAÇÃO
         # =====================================================
 
-        else:      
-                   
-          
+        else:
+
             st.subheader("Simulação de Aplicação")
 
             # =====================================================
-            # APLICAÇÕES
+            # APLICAÇÃO INICIAL
             # =====================================================
 
-            st.markdown("### Aplicações")
+            st.markdown("### Aplicação")
 
-            col1, col2, col3, col4 = st.columns([0.8, 1.5, 1.2, 1.2])
+            col1, col2, col3 = st.columns([1.5, 1.2, 1.2])
 
             with col1:
-                st.markdown("**Aplicação**")
-
-            with col2:
-                st.markdown("**Valor (R$)**")
-
-            with col3:
-                st.markdown("**% do CDI**")
-
-            with col4:
-                st.markdown("**Prazo (meses)**")
-
-
-            # =====================================================
-            # APLICAÇÃO 1
-            # =====================================================
-
-            col1, col2, col3, col4 = st.columns([0.8, 1.5, 1.2, 1.2])
-
-            with col1:
-                st.write("1")
-
-            with col2:
                 valor_1 = st.number_input(
-                "Valor 1",
-                min_value=0.01,
-                step=100.00,
-                format="%.2f",
-                value=None,
-                placeholder="Valor",
-                label_visibility="collapsed",
-                key="valor_aplicacao_1"
-            )
+                    "Valor da aplicação (R$)",
+                    min_value=0.01,
+                    step=100.00,
+                    format="%.2f",
+                    value=None,
+                    placeholder="Valor",
+                    key="valor_aplicacao_1"
+                )
 
-            with col3:
+            with col2:
                 taxa_1 = st.number_input(
-                "Taxa 1",
-                min_value=0.01,
-                step=1.00,
-                format="%.2f",
-                value=None,
-                placeholder="% CDI",
-                label_visibility="collapsed",
-                key="taxa_aplicacao_1"
-            )
+                    "Taxa (% do CDI)",
+                    min_value=0.01,
+                    step=1.00,
+                    format="%.2f",
+                    value=None,
+                    placeholder="% CDI",
+                    key="taxa_aplicacao_1"
+                )
 
-            with col4:
+            with col3:
                 prazo_1 = st.number_input(
-                "Prazo 1",
-                min_value=1,
-                step=1,
-                value=None,
-                placeholder="Meses",
-                label_visibility="collapsed",
-                key="prazo_aplicacao_1"
-            )
-
-
-            # =====================================================
-            # APLICAÇÃO 2
-            # =====================================================
-
-            col1, col2, col3, col4 = st.columns([0.8, 1.5, 1.2, 1.2])
-
-            with col1:
-                st.write("2")
-
-            with col2:
-                valor_2 = st.number_input(
-                "Valor 2",
-                min_value=0.01,
-                step=100.00,
-                format="%.2f",
-                value=None,
-                placeholder="Valor",
-                label_visibility="collapsed",
-                key="valor_aplicacao_2"
-            )
-
-            with col3:
-                 taxa_2 = st.number_input(
-                "Taxa 2",
-                min_value=0.01,
-                step=1.00,
-                format="%.2f",
-                value=None,
-                placeholder="% CDI",
-                label_visibility="collapsed",
-                key="taxa_aplicacao_2"
-            )
-
-            with col4:
-                prazo_2 = st.number_input(
-                "Prazo 2",
-                min_value=1,
-                step=1,
-                value=None,
-                placeholder="Meses",
-                label_visibility="collapsed",
-                key="prazo_aplicacao_2"
-            )
-
-
-            # =====================================================
-            # APLICAÇÃO 3
-            # =====================================================
-
-            col1, col2, col3, col4 = st.columns([0.8, 1.5, 1.2, 1.2])
-
-            with col1:
-                st.write("3")
-
-            with col2:
-                valor_3 = st.number_input(
-                "Valor 3",
-                min_value=0.01,
-                step=100.00,
-                format="%.2f",
-                value=None,
-                placeholder="Valor",
-                label_visibility="collapsed",
-                key="valor_aplicacao_3"
-            )
-
-            with col3:
-                taxa_3 = st.number_input(
-                "Taxa 3",
-                min_value=0.01,
-                step=1.00,
-                format="%.2f",
-                value=None,
-                placeholder="% CDI",
-                label_visibility="collapsed",
-                key="taxa_aplicacao_3"
-            )
-
-            with col4:
-                prazo_3 = st.number_input(
-                "Prazo 3",
-                min_value=1,
-                step=1,
-                value=None,
-                placeholder="Meses",
-                label_visibility="collapsed",
-                key="prazo_aplicacao_3"
-            )
-
-
-            # =====================================================
-            # DATA DA PESQUISA
-            # =====================================================
+                    "Prazo (meses)",
+                    min_value=1,
+                    step=1,
+                    value=None,
+                    placeholder="Meses",
+                    key="prazo_aplicacao_1"
+                )
 
             data_pesquisa = st.date_input(
                 "Data da pesquisa",
@@ -1066,554 +943,515 @@ else:
             )
 
             # =============================================================
-            # NOVAS PEQUENAS APLICAÇÕES
+            # APORTES MENSAIS
             # =============================================================
 
-            pequenas_aplicacoes = st.radio(
-                "Você deseja fazer novas pequenas aplicações nesse período?",
+            aportes_mensais = st.radio(
+                "Você deseja fazer aportes mensais nesse período?",
                 ["Não", "Sim"],
                 horizontal=True,
-                key="pequenas_aplicacoes_aplicacao"
+                key="aportes_mensais_aplicacao"
             )
 
-            valor_pequena_aplicacao = None
-            taxa_pequena_aplicacao = None
+            valor_aporte_mensal = None
+            taxa_aporte_mensal = None
 
-            if pequenas_aplicacoes == "Sim":
+            if aportes_mensais == "Sim":
 
-                valor_pequena_aplicacao = st.number_input(
-                    "Valor da pequena aplicação (R$)",
+                valor_aporte_mensal = st.number_input(
+                    "Valor do aporte mensal (R$)",
                     min_value=0.01,
                     step=50.00,
                     format="%.2f",
                     value=None,
                     placeholder="Digite o valor mensal",
-                    key="valor_pequena_aplicacao"
+                    key="valor_aporte_mensal"
                 )
 
-                taxa_pequena_aplicacao = st.number_input(
-                    "Taxa da pequena aplicação (% do CDI)",
+                taxa_aporte_mensal = st.number_input(
+                    "Taxa do aporte mensal (% do CDI)",
                     min_value=0.01,
                     step=1.00,
                     format="%.2f",
                     value=None,
                     placeholder="Digite a taxa",
-                    key="taxa_pequena_aplicacao"
+                    key="taxa_aporte_mensal"
                 )
 
-        
+            # =============================================================
+            # RESGATES
+            # =============================================================
+
+            st.markdown("### Retirada de Rendimentos")
+
+            retiradas = st.radio(
+                "Você deseja retirar parte dos rendimentos durante o período?",
+                ["Não", "Sim"],
+                horizontal=True,
+                key="retiradas_rendimento_aplicacao"
+            )
+
+            valor_retirada = None
+            quantidade_retiradas = None
+
+            if retiradas == "Sim":
+
+                valor_retirada = st.number_input(
+                    "Valor da retirada mensal (R$)",
+                    min_value=0.01,
+                    step=50.00,
+                    format="%.2f",
+                    value=None,
+                    placeholder="Digite o valor da retirada",
+                    key="valor_retirada_aplicacao"
+                )
+
+                quantidade_retiradas = st.number_input(
+                    "Quantidade de meses com retirada",
+                    min_value=1,
+                    step=1,
+                    value=None,
+                    placeholder="Meses",
+                    key="quantidade_retiradas_aplicacao"
+                )
+
+                st.caption(
+                    "O rendimento é calculado a cada período. A retirada "
+                    "é uma decisão do usuário: primeiro utiliza o rendimento "
+                    "acumulado; se o valor solicitado superar esse rendimento, "
+                    "o excedente reduz o principal."
+                )
+
+            # =============================================================
+            # CÁLCULO
+            # =============================================================
+
             if st.button(
                 "🧮 Calcular Simulação",
                 type="primary",
                 use_container_width=True,
                 key="btn_calcular_simulacao_aplicacao"
             ):
-        
-                # =====================================================
-                # VALIDAÇÃO DAS APLICAÇÕES
-                # =====================================================
 
-                # -------------------------------------------------
-                # APLICAÇÃO 1 — OBRIGATÓRIA
-                # -------------------------------------------------
-
-                    linha_1_vazia = (
-                    (valor_1 is None or valor_1 == 0)
-                    and
-                    (taxa_1 is None or taxa_1 == 0)
-                    and
-                    (prazo_1 is None or prazo_1 == 0)
-                )
-
-                    linha_1_incompleta = (
+                linha_1_incompleta = (
                     valor_1 is None or valor_1 == 0
-                    or
-                    taxa_1 is None or taxa_1 == 0
-                    or
-                    prazo_1 is None or prazo_1 == 0
+                    or taxa_1 is None or taxa_1 == 0
+                    or prazo_1 is None or prazo_1 == 0
                 )
 
-                    if linha_1_vazia:
+                if linha_1_incompleta:
 
-                        st.warning(
-                        "Preencha a Aplicação 1 antes de calcular."
+                    st.warning(
+                        "Informe valor, taxa e prazo da aplicação."
                     )
 
-                    elif linha_1_incompleta:
+                elif (
+                    aportes_mensais == "Sim"
+                    and (
+                        valor_aporte_mensal is None
+                        or taxa_aporte_mensal is None
+                    )
+                ):
 
-                        st.warning(
-                        "A Aplicação 1 está incompleta. "
-                        "Informe valor, taxa e prazo."
+                    st.warning(
+                        "Informe o valor e a taxa dos aportes mensais."
                     )
 
-                    else:
+                elif (
+                    retiradas == "Sim"
+                    and (
+                        valor_retirada is None
+                        or quantidade_retiradas is None
+                    )
+                ):
 
-                            # -------------------------------------------------
-                            # BUSCA DO CDI
-                            # -------------------------------------------------
+                    st.warning(
+                        "Informe o valor e a quantidade de meses das retiradas."
+                    )
 
-                            dados_cdi = mod_fontes.buscar_cdi_anual()
-                            cdi_anual = dados_cdi["cdi_anual"]
-            
+                else:
 
-                            # =================================================
-                            # CÁLCULO — APLICAÇÃO 1
-                            # =================================================            
+                    # -------------------------------------------------
+                    # BUSCA DO CDI
+                    # -------------------------------------------------
 
-                            taxa_anual = (
+                    dados_cdi = mod_fontes.buscar_cdi_anual()
+                    cdi_anual = dados_cdi["cdi_anual"]
+
+                    prazo_simulacao = int(prazo_1)
+                    data_final = (
+                        pd.to_datetime(data_pesquisa)
+                        + pd.DateOffset(months=prazo_simulacao)
+                    )
+
+                    taxa_anual = mod_aplicacoes.calcular_taxa_ofertada(
+                        cdi_anual,
+                        float(taxa_1)
+                    )
+
+                    taxa_mensal = (
+                        (1 + taxa_anual / 100) ** (1 / 12)
+                    ) - 1
+
+                    taxa_mensal_aporte = None
+                    if aportes_mensais == "Sim":
+                        taxa_anual_aporte = (
                             mod_aplicacoes.calcular_taxa_ofertada(
-                            cdi_anual,
-                            float(taxa_1))
+                                cdi_anual,
+                                float(taxa_aporte_mensal)
+                            )
+                        )
+                        taxa_mensal_aporte = (
+                            (1 + taxa_anual_aporte / 100) ** (1 / 12)
+                        ) - 1
+
+                    # -------------------------------------------------
+                    # EVOLUÇÃO MENSAL DA SIMULAÇÃO
+                    # -------------------------------------------------
+
+                    # Cada aplicação é mantida separadamente. Isso permite
+                    # que os aportes tenham taxa própria e que a retirada,
+                    # nesta simulação, seja direcionada à aplicação inicial.
+                    aplicacao_inicial = {
+                        "principal": float(valor_1),
+                        "taxa_mensal": taxa_mensal,
+                        "rendimento_acumulado": 0.0,
+                    }
+
+                    aportes = []
+                    total_aportes = 0.0
+                    total_retiradas = 0.0
+                    total_ir = 0.0
+                    total_iof = 0.0
+                    detalhes_simulacao = []
+                    saldo_final = float(valor_1)
+                    rendimento_total_bruto = 0.0
+
+                    for mes in range(1, prazo_simulacao + 1):
+
+                        data_periodo = (
+                            pd.to_datetime(data_pesquisa)
+                            + pd.DateOffset(months=mes)
+                        )
+
+                        # 1. Rendimento do período sobre as aplicações
+                        # existentes no início do mês.
+                        # O rendimento do período incide sobre todo o saldo
+                        # que permaneceu aplicado: principal + rendimento
+                        # acumulado. Assim, o rendimento que não foi retirado
+                        # continua participando da capitalização no período seguinte.
+                        saldo_base_rendimento = (
+                            aplicacao_inicial["principal"]
+                            + aplicacao_inicial["rendimento_acumulado"]
+                        )
+                        rendimento_inicial = (
+                            saldo_base_rendimento
+                            * aplicacao_inicial["taxa_mensal"]
+                        )
+                        aplicacao_inicial["rendimento_acumulado"] += (
+                            rendimento_inicial
+                        )
+                        rendimento_periodo = rendimento_inicial
+
+                        for aporte in aportes:
+                            rendimento_aporte = (
+                                aporte["principal"] * aporte["taxa_mensal"]
+                            )
+                            aporte["rendimento_acumulado"] += rendimento_aporte
+                            rendimento_periodo += rendimento_aporte
+
+                        rendimento_total_bruto += rendimento_periodo
+
+                        # 2. Novo aporte entra depois do rendimento do mês.
+                        aporte_periodo = 0.0
+                        if (
+                            aportes_mensais == "Sim"
+                            and mes <= prazo_simulacao
+                        ):
+                            aporte_periodo = float(valor_aporte_mensal)
+                            aportes.append({
+                                "mes": mes,
+                                "principal": aporte_periodo,
+                                "taxa_mensal": taxa_mensal_aporte,
+                                "rendimento_acumulado": 0.0,
+                            })
+                            total_aportes += aporte_periodo
+
+                        # 3. Retirada de rendimentos: nesta simulação,
+                        # o rendimento do período já está disponível. A retirada
+                        # é uma decisão do usuário e é direcionada à aplicação
+                        # inicial. Primeiro utiliza o rendimento acumulado;
+                        # o excedente reduz o principal.
+                        retirada_solicitada = 0.0
+                        retirada_realizada = 0.0
+                        rendimento_retirado = 0.0
+                        principal_retirado = 0.0
+                        aliquota_ir = 0.0
+                        valor_ir = 0.0
+                        aliquota_iof = 0.0
+                        valor_iof = 0.0
+
+                        if (
+                            retiradas == "Sim"
+                            and mes <= int(quantidade_retiradas)
+                        ):
+                            retirada_solicitada = float(valor_retirada)
+                            saldo_aplicacao_inicial = (
+                                aplicacao_inicial["principal"]
+                                + aplicacao_inicial["rendimento_acumulado"]
+                            )
+                            retirada_realizada = min(
+                                retirada_solicitada,
+                                saldo_aplicacao_inicial
                             )
 
-                            simulacao_1 = mod_aplicacoes.criar_aplicacao(
-                                valor=float(valor_1),
-                                taxa_anual=taxa_anual / 100,
-                                quantidade_meses=int(prazo_1),
-                                data_aplicacao=data_pesquisa
+                            restante = retirada_realizada
+
+                            # Primeiro utiliza o rendimento acumulado.
+                            rendimento_retirado = min(
+                                restante,
+                                aplicacao_inicial["rendimento_acumulado"]
                             )
-
-                            saldo_final_1 = simulacao_1.iloc[-1]["Saldo"]
-
-                            rendimento_total_1 = (
-                                saldo_final_1 - float(valor_1)
+                            aplicacao_inicial["rendimento_acumulado"] -= (
+                                rendimento_retirado
                             )
+                            restante -= rendimento_retirado
 
-                            rendimento_medio_mensal_1 = (
-                                rendimento_total_1 / int(prazo_1)
-                            )
-
-                            data_final_1 = (
-                                pd.to_datetime(data_pesquisa)
-                                + pd.DateOffset(months=int(prazo_1))
-                            )
-
-                            st.markdown("---")
-
-                            st.subheader("Resultado da Aplicação 1")
-
-                            st.write(
-                                f"**Valor aplicado:** "
-                                f"{formatar_moeda_br(valor_1)}"
-                            )
-
-                            st.write(
-                                f"**Taxa:** "
-                                f"{taxa_1:.2f}% do CDI"
-                            )
-
-                            st.write(
-                                f"**Prazo:** "
-                                f"{int(prazo_1)} meses"
-                            )
-
-                            st.write(
-                                f"**Rendimento estimado:** "
-                                f"**{formatar_moeda_br(rendimento_total_1)}**"
-                            )
-
-                            st.write(
-                                f"**Rendimento médio mensal:** "
-                                f"**{formatar_moeda_br(rendimento_medio_mensal_1)}**"
-                            )
-
-                            st.write(
-                                f"**Saldo final estimado:** "
-                                f"**{formatar_moeda_br(saldo_final_1)}**"
-                            )
-
-                            st.write(
-                                f"**Data final estimada:** "
-                                f"{data_final_1.strftime('%d/%m/%Y')}"
-                            )
-
-                            # =================================================
-                            # CÁLCULO — APLICAÇÃO 2
-                            # =================================================
-
-                            if (
-                                valor_2 is not None
-                                and taxa_2 is not None
-                                and prazo_2 is not None
-                            ):  
-
-                                    taxa_anual_2 = (
-                                    mod_aplicacoes.calcular_taxa_ofertada(cdi_anual,
-                                    float(taxa_2)
-                                    )
+                            # O excedente reduz o principal da aplicação inicial.
+                            principal_retirado = restante
+                            if principal_retirado > 0:
+                                aplicacao_inicial["principal"] = max(
+                                    aplicacao_inicial["principal"] - principal_retirado,
+                                    0.0
                                 )
 
-                                    simulacao_2 = mod_aplicacoes.criar_aplicacao(
-                                    valor=float(valor_2),
-                                    taxa_anual=taxa_anual_2 / 100,
-                                    quantidade_meses=int(prazo_2),
-                                    data_aplicacao=data_pesquisa
-                                )
+                            # -------------------------------------------------
+                            # IMPOSTOS DA RETIRADA
+                            # -------------------------------------------------
+                            # O rendimento do período fica disponível na
+                            # data_periodo. A decisão de retirada ocorre
+                            # depois dessa disponibilização.
+                            # Para a simulação, a idade da aplicação é contada
+                            # em dias corridos desde a data original da aplicação.
+                            data_aplicacao = pd.to_datetime(data_pesquisa).date()
+                            data_rendimento_disponivel = data_periodo.date()
+                            dias_aplicacao = (
+                                data_rendimento_disponivel - data_aplicacao
+                            ).days
 
-                                    saldo_final_2 = simulacao_2.iloc[-1]["Saldo"]
+                            if dias_aplicacao <= 180:
+                                aliquota_ir = 22.5
+                            elif dias_aplicacao <= 360:
+                                aliquota_ir = 20.0
+                            elif dias_aplicacao <= 720:
+                                aliquota_ir = 17.5
+                            else:
+                                aliquota_ir = 15.0
 
-                                    rendimento_total_2 = (
-                                    saldo_final_2 - float(valor_2)
-                                )
-
-                                    rendimento_medio_mensal_2 = (
-                                    rendimento_total_2 / int(prazo_2)
-                                )
-
-                                    data_final_2 = (
-                                    pd.to_datetime(data_pesquisa)
-                                    + pd.DateOffset(months=int(prazo_2))
-                                )
-
-                                # =============================================
-                                # RESULTADO — APLICAÇÃO 2
-                                # =============================================
-
-                                    st.markdown("---")
-
-                                    st.subheader("Resultado da Aplicação 2")
-
-                                    st.write(
-                                    f"**Valor aplicado:** "
-                                    f"{formatar_moeda_br(valor_2)}"
-                                )
-
-                                    st.write(
-                                    f"**Taxa:** "
-                                    f"{taxa_2:.2f}% do CDI"
-                                )
-
-                                    st.write(
-                                    f"**Prazo:** "
-                                    f"{int(prazo_2)} meses"
-                                )
-
-                                    st.write(
-                                    f"**Rendimento estimado:** "
-                                    f"**{formatar_moeda_br(rendimento_total_2)}**"
-                                )
-
-                                    st.write(
-                                    f"**Rendimento médio mensal:** "
-                                    f"**{formatar_moeda_br(rendimento_medio_mensal_2)}**"
-                                )
-
-                                    st.write(
-                                    f"**Saldo final estimado:** "
-                                    f"**{formatar_moeda_br(saldo_final_2)}**"
-                                )
-
-                                    st.write(
-                                    f"**Data final estimada:** "
-                                 f"{data_final_2.strftime('%d/%m/%Y')}"
-                                ) 
-
-                            # =================================================
-                            # CÁLCULO — APLICAÇÃO 3
-                            # =================================================
-
-                            if (
-                                valor_3 is not None
-                                and taxa_3 is not None
-                                and prazo_3 is not None
-                            ):
-
-                                taxa_anual_3 = (
-                                mod_aplicacoes.calcular_taxa_ofertada(
-                                    cdi_anual,
-                                    float(taxa_3)
-                                )
+                            # IOF regressivo somente nos primeiros 30 dias.
+                            tabela_iof = {
+                                1: 96.0, 2: 93.0, 3: 90.0, 4: 86.0,
+                                5: 83.0, 6: 80.0, 7: 76.0, 8: 73.0,
+                                9: 70.0, 10: 66.0, 11: 63.0, 12: 60.0,
+                                13: 56.0, 14: 53.0, 15: 50.0, 16: 46.0,
+                                17: 43.0, 18: 40.0, 19: 36.0, 20: 33.0,
+                                21: 30.0, 22: 26.0, 23: 23.0, 24: 20.0,
+                                25: 16.0, 26: 13.0, 27: 10.0, 28: 6.0,
+                                29: 3.0, 30: 0.0,
+                            }
+                            aliquota_iof = tabela_iof.get(
+                                dias_aplicacao, 0.0
                             )
 
-                                simulacao_3 = mod_aplicacoes.criar_aplicacao(
-                                valor=float(valor_3),
-                                taxa_anual=taxa_anual_3 / 100,
-                                quantidade_meses=int(prazo_3),
-                                data_aplicacao=data_pesquisa
+                            valor_iof = (
+                                rendimento_retirado
+                                * aliquota_iof
+                                / 100
                             )
-
-                                saldo_final_3 = simulacao_3.iloc[-1]["Saldo"]
-
-                                rendimento_total_3 = (
-                                saldo_final_3 - float(valor_3)
+                            base_ir = max(
+                                rendimento_retirado - valor_iof,
+                                0.0
                             )
+                            valor_ir = base_ir * aliquota_ir / 100
 
-                                rendimento_medio_mensal_3 = (
-                                rendimento_total_3 / int(prazo_3)
+                            # O imposto é uma saída adicional de caixa e, por
+                            # isso, reduz o saldo que seguirá para o mês seguinte.
+                            imposto_total = valor_iof + valor_ir
+                            restante_imposto = imposto_total
+
+                            abatimento_principal_imposto = min(
+                                restante_imposto,
+                                aplicacao_inicial["principal"]
                             )
-
-                                data_final_3 = (
-                                pd.to_datetime(data_pesquisa)
-                                + pd.DateOffset(months=int(prazo_3))
+                            aplicacao_inicial["principal"] -= (
+                                abatimento_principal_imposto
                             )
+                            restante_imposto -= abatimento_principal_imposto
 
-                                # =============================================
-                                # RESULTADO — APLICAÇÃO 3
-                                # =============================================
-
-                                st.markdown("---")
-
-                                st.subheader("Resultado da Aplicação 3")
-
-                                st.write(
-                                f"**Valor aplicado:** "
-                                f"{formatar_moeda_br(valor_3)}"
+                            if restante_imposto > 0:
+                                aplicacao_inicial["rendimento_acumulado"] = max(
+                                    aplicacao_inicial["rendimento_acumulado"]
+                                    - restante_imposto,
+                                    0.0
                                 )
 
-                                st.write(
-                                f"**Taxa:** "
-                                f"{taxa_3:.2f}% do CDI"
-                                )
+                            total_retiradas += retirada_realizada
+                            total_ir += valor_ir
+                            total_iof += valor_iof
 
-                                st.write(
-                                f"**Prazo:** "
-                                f"{int(prazo_3)} meses"
-                                )
+                        saldo_inicial_periodo = saldo_final
+                        saldo_final = (
+                            aplicacao_inicial["principal"]
+                            + aplicacao_inicial["rendimento_acumulado"]
+                            + sum(
+                                aporte["principal"]
+                                + aporte["rendimento_acumulado"]
+                                for aporte in aportes
+                            )
+                        )
 
-                                st.write(
-                                f"**Rendimento estimado:** "
-                                f"**{formatar_moeda_br(rendimento_total_3)}**"
-                                )
+                        detalhes_simulacao.append({
+                            "Mês": mes,
+                            "Data": data_periodo.strftime("%d/%m/%Y"),
+                            "Dias de aplicação": (
+                                data_periodo.date()
+                                - pd.to_datetime(data_pesquisa).date()
+                            ).days,
+                            "Saldo inicial": saldo_inicial_periodo,
+                            "Rendimento": rendimento_periodo,
+                            "Aporte": aporte_periodo,
+                            "Retirada solicitada": retirada_solicitada,
+                            "Retirada realizada": retirada_realizada,
+                            "Rendimento retirado": rendimento_retirado,
+                            "Principal retirado": principal_retirado,
+                            "IR": valor_ir,
+                            "IOF": valor_iof,
+                            "Saldo final": saldo_final,
+                        })
 
-                                st.write(
-                                f"**Rendimento médio mensal:** "
-                                f"**{formatar_moeda_br(rendimento_medio_mensal_3)}**"
-                                )
+                    # -------------------------------------------------
+                    # RESULTADOS
+                    # -------------------------------------------------
 
-                                st.write(
-                                f"**Saldo final estimado:** "
-                                f"**{formatar_moeda_br(saldo_final_3)}**"
-                                )
+                    valor_inicial = float(valor_1)
+                    total_aplicado = valor_inicial + total_aportes
+                    rendimento_liquido_movimentacoes = (
+                        saldo_final
+                        - total_aplicado
+                        + total_retiradas
+                    )
 
-                                st.write(
-                                f"**Data final estimada:** "
-                                f"{data_final_3.strftime('%d/%m/%Y')}"
-                                )
+                    st.markdown("---")
+                    st.subheader("Resultado da Simulação")
 
-                            # =================================================
-                            # CÁLCULO — PEQUENAS APLICAÇÕES MENSAIS
-                            # =================================================
+                    st.write(
+                        f"**Aplicação inicial:** "
+                        f"{formatar_moeda_br(valor_inicial)}"
+                    )
 
-                            pequenas_aplicacoes_calculadas = []
+                    st.write(
+                        f"**Taxa:** {taxa_1:.2f}% do CDI"
+                    )
 
-                            if pequenas_aplicacoes == "Sim":
+                    st.write(
+                        f"**Prazo:** {prazo_simulacao} meses"
+                    )
 
-                                if (
-                                    valor_pequena_aplicacao is None
-                                    or taxa_pequena_aplicacao is None
-                                ):
-                                    st.warning(
-                                        "Informe o valor e a taxa das pequenas "
-                                        "aplicações antes de calcular."
-                                    )
+                    st.write(
+                        f"**Total de aportes:** "
+                        f"{formatar_moeda_br(total_aportes)}"
+                    )
 
-                                else:
+                    st.write(
+                        f"**Total retirado:** "
+                        f"{formatar_moeda_br(total_retiradas)}"
+                    )
 
-                                    taxa_anual_pequena = (
-                                        mod_aplicacoes.calcular_taxa_ofertada(
-                                            cdi_anual,
-                                            float(taxa_pequena_aplicacao)
-                                        )
-                                    )
+                    st.write(
+                        f"**IR estimado:** "
+                        f"{formatar_moeda_br(total_ir)}"
+                    )
 
-                                    data_final_pequenas = (
-                                        pd.to_datetime(data_pesquisa)
-                                        + pd.DateOffset(months=12)
-                                    )
+                    st.write(
+                        f"**IOF estimado:** "
+                        f"{formatar_moeda_br(total_iof)}"
+                    )
 
-                                    for numero_aplicacao in range(1, 13):
+                    st.write(
+                        f"**Rendimento líquido estimado:** "
+                        f"**{formatar_moeda_br(rendimento_liquido_movimentacoes)}**"
+                    )
 
-                                        data_inicio_pequena = (
-                                            pd.to_datetime(data_pesquisa)
-                                            + pd.DateOffset(months=numero_aplicacao)
-                                        )
+                    st.write(
+                        f"**Saldo final estimado:** "
+                        f"**{formatar_moeda_br(saldo_final)}**"
+                    )
 
-                                        prazo_pequena = 13 - numero_aplicacao
+                    st.write(
+                        f"**Data final estimada:** "
+                        f"{data_final.strftime('%d/%m/%Y')}"
+                    )
 
-                                        simulacao_pequena = (
-                                            mod_aplicacoes.criar_aplicacao(
-                                                valor=float(
-                                                    valor_pequena_aplicacao
-                                                ),
-                                                taxa_anual=(
-                                                    taxa_anual_pequena / 100
-                                                ),
-                                                quantidade_meses=prazo_pequena,
-                                                data_aplicacao=(
-                                                    data_inicio_pequena.date()
-                                                )
-                                            )
-                                        )
+                    # -------------------------------------------------
+                    # RADIOGRAFIA — DISPONÍVEL PARA CONFERÊNCIA
+                    # -------------------------------------------------
 
-                                        saldo_final_pequena = (
-                                            simulacao_pequena.iloc[-1]["Saldo"]
-                                        )
+                    with st.expander("Entenda a evolução mês a mês"):
+                        df_radiografia = pd.DataFrame(detalhes_simulacao)
 
-                                        rendimento_pequena = (
-                                            saldo_final_pequena
-                                            - float(valor_pequena_aplicacao)
-                                        )
-
-                                        pequenas_aplicacoes_calculadas.append({
-                                            "numero": numero_aplicacao,
-                                            "data_inicio": data_inicio_pequena,
-                                            "prazo": prazo_pequena,
-                                            "valor": float(
-                                                valor_pequena_aplicacao
-                                            ),
-                                            "rendimento": float(
-                                                rendimento_pequena
-                                            ),
-                                            "saldo_final": float(
-                                                saldo_final_pequena
-                                            )
-                                        })
-
-                                    valor_total_pequenas = sum(
-                                        item["valor"]
-                                        for item in pequenas_aplicacoes_calculadas
-                                    )
-
-                                    rendimento_total_pequenas = sum(
-                                        item["rendimento"]
-                                        for item in pequenas_aplicacoes_calculadas
-                                    )
-
-                                    saldo_final_pequenas = sum(
-                                        item["saldo_final"]
-                                        for item in pequenas_aplicacoes_calculadas
-                                    )
-
-                                    st.markdown("---")
-                                    st.subheader(
-                                        "Resultado das Pequenas Aplicações"
-                                    )
-
-                                    st.write(
-                                        f"**Quantidade de aplicações:** "
-                                        f"{len(pequenas_aplicacoes_calculadas)}"
-                                    )
-
-                                    st.write(
-                                        f"**Valor de cada aplicação:** "
-                                        f"{formatar_moeda_br(valor_pequena_aplicacao)}"
-                                    )
-
-                                    st.write(
-                                        f"**Valor total aplicado:** "
-                                        f"**{formatar_moeda_br(valor_total_pequenas)}**"
-                                    )
-
-                                    st.write(
-                                        f"**Taxa:** "
-                                        f"{taxa_pequena_aplicacao:.2f}% do CDI"
-                                    )
-
-                                    st.write(
-                                        f"**Rendimento estimado:** "
-                                        f"**{formatar_moeda_br(rendimento_total_pequenas)}**"
-                                    )
-
-                                    st.write(
-                                        f"**Saldo final estimado:** "
-                                        f"**{formatar_moeda_br(saldo_final_pequenas)}**"
-                                    )
-
-                                    st.write(
-                                        f"**Data final da simulação:** "
-                                        f"{data_final_pequenas.strftime('%d/%m/%Y')}"
-                                    )
-
-                                    st.caption(
-                                        "As pequenas aplicações são calculadas "
-                                        "individualmente. Cada nova aplicação "
-                                        "começa em um mês diferente e todas "
-                                        "consideram o mesmo término da simulação."
-                                    )
-
-                            # =================================================
-                            # RESULTADO CONSOLIDADO
-                            # =================================================
-
-                            valor_total_consolidado = float(valor_1)
-                            rendimento_total_consolidado = float(
-                                rendimento_total_1
+                        for coluna in [
+                            "Saldo inicial",
+                            "Rendimento",
+                            "Aporte",
+                            "Retirada solicitada",
+                            "Retirada realizada",
+                            "Rendimento retirado",
+                            "Principal retirado",
+                            "IR",
+                            "IOF",
+                            "Saldo final"
+                        ]:
+                            df_radiografia[coluna] = df_radiografia[coluna].map(
+                                formatar_moeda_br
                             )
 
-                            if (
-                                valor_2 is not None
-                                and taxa_2 is not None
-                                and prazo_2 is not None
-                            ):
-                                valor_total_consolidado += float(valor_2)
-                                rendimento_total_consolidado += float(
-                                    rendimento_total_2
-                                )
+                        st.dataframe(
+                            df_radiografia,
+                            use_container_width=True,
+                            hide_index=True
+                        )
 
-                            if (
-                                valor_3 is not None
-                                and taxa_3 is not None
-                                and prazo_3 is not None
-                            ):
-                                valor_total_consolidado += float(valor_3)
-                                rendimento_total_consolidado += float(
-                                    rendimento_total_3
-                                )
+                    # -------------------------------------------------
+                    # PREMISSA
+                    # -------------------------------------------------
 
-                            if pequenas_aplicacoes_calculadas:
-                                valor_total_consolidado += (
-                                    valor_total_pequenas
-                                )
-                                rendimento_total_consolidado += (
-                                    rendimento_total_pequenas
-                                )
+                    st.markdown("### Premissa da Simulação")
 
-                            saldo_final_consolidado = (
-                                valor_total_consolidado
-                                + rendimento_total_consolidado
-                            )
+                    st.caption(
+                        "Estimativa matemática baseada no CDI de referência "
+                        "e na manutenção das taxas utilizadas na simulação "
+                        "durante todo o período."
+                    )
 
-                            st.markdown("---")
-                            st.subheader("Resultado Consolidado")
+                    st.caption(
+                        "Nesta simulação, o IR segue as alíquotas regressivas de "
+                        "referência para aplicações de renda fixa. A idade da "
+                        "aplicação continua correndo mesmo quando parte do "
+                        "rendimento é retirada. O IOF é aplicado somente quando "
+                        "a retirada ocorre nos primeiros 30 dias. Essas são "
+                        "premissas de simulação e não regras operacionais "
+                        "universais das instituições financeiras."
+                    )
 
-                            st.write(
-                                f"**Total aplicado:** "
-                                f"**{formatar_moeda_br(valor_total_consolidado)}**"
-                            )
+                    st.caption(
+                        "Fonte do CDI: Banco Central do Brasil / SGS — "
+                        "série 4389 (CDI anualizado, base 252 dias úteis). "
+                        f"Data de referência: "
+                        f"{pd.to_datetime(dados_cdi['data_referencia']).strftime('%d/%m/%Y')}."
+                    )
 
-                            st.write(
-                                f"**Rendimento estimado total:** "
-                                f"**{formatar_moeda_br(rendimento_total_consolidado)}**"
-                            )
+                    st.session_state["aplicacoes_simulacao_calculada"] = True
 
-                            st.write(
-                                f"**Saldo final estimado:** "
-                                f"**{formatar_moeda_br(saldo_final_consolidado)}**"
-                            )
-
-                            #=============================================
-                            # PREMISSA
-                            # =============================================
-                                            
-                            st.markdown("### Premissa da Simulação")
-                                            
-                            st.caption("Estimativa matemática baseada no CDI de referência "
-                            "e na manutenção das taxas utilizadas na simulação "
-                            "durante todo o período."
-                            )
-
-                            st.caption(
-                                "Fonte do CDI: Banco Central do Brasil / SGS — "
-                                "série 4389 (CDI anualizado, base 252 dias úteis). "
-                                f"Data de referência: "
-                                f"{pd.to_datetime(dados_cdi['data_referencia']).strftime('%d/%m/%Y')}."
-                            )
-
-                            # A simulação foi concluída.
-                            # A FAQ somente fica disponível após o resultado.
-                            st.session_state["aplicacoes_simulacao_calculada"] = True
-
-        # =====================================================
         # NAVEGAÇÃO — DÚVIDAS FREQUENTES
         # =====================================================
         # A navegação da FAQ permanece fora do bloco do cálculo,
@@ -1637,103 +1475,3 @@ else:
             ):
                 st.session_state["aplicacoes_mostrar_faq"] = True
                 st.rerun()
-         
-        # =============================================
-        # CONDIÇÕES ADICIONAIS DA OFERTA
-        # =============================================
-        # taxa_possui_limite = st.radio(
-        #         "A taxa anunciada possui limite de aplicação?",
-        #         ["Não", "Sim"],
-        #         horizontal=True,
-        #         key="taxa_possui_limite_aplicacao"
-        #         )
-        # limite_taxa = None
-        # taxa_excedente = None
-        # excedente_nao_informado = False
-        # if taxa_possui_limite == "Sim":
-        #             limite_taxa = st.number_input(
-        #             "Limite da taxa anunciada (R$)",
-        #             min_value=0.01,
-        #             step=100.00,
-        #             format="%.2f",
-        #             value=None,
-        #             placeholder="Digite o limite",
-        #             key="limite_taxa_aplicacao"
-        #         )
-        # excedente_nao_informado = st.checkbox(
-        #             "A instituição não informou a taxa do excedente",
-        #             key="excedente_nao_informado_aplicacao"
-        #         )
-        # taxa_excedente = st.number_input(
-        #             "Taxa do excedente (% do CDI)",
-        #             min_value=0.01,
-        #             step=1.00,
-        #             format="%.2f",
-        #             value=None,
-        #             placeholder="Digite a taxa do excedente",
-        #             disabled=excedente_nao_informado,
-        #             key="taxa_excedente_aplicacao"        #         )     
-        #         if taxa_possui_limite == "Sim":
-        #             # A instituição informou a taxa do excedente
-        #             if not excedente_nao_informado:
-        #                 simulacao_faixas = mod_aplicacoes.simular_aplicacao_com_faixas(
-        #                     valor_total=float(valor_aplicacao),
-        #                     limite_taxa=float(limite_taxa),
-        #                     percentual_taxa_prometida=float(taxa_prometida),
-        #                     percentual_taxa_excedente=float(taxa_excedente),
-        #                     cdi_anual=float(cdi_anual),
-        #                     quantidade_meses=int(prazo_meses),
-        #                     data_aplicacao=data_pesquisa
-        #                 )
-        #             # A instituição NÃO informou a taxa do excedente
-        #             else:
-        #                 # Premissa S.Y.S.T.E.M.:
-        #                 # utiliza 100% do CDI para o excedente
-        #                 simulacao_faixas = mod_aplicacoes.simular_aplicacao_com_faixas(
-        #                     valor_total=float(valor_aplicacao),
-        #                     limite_taxa=float(limite_taxa),
-        #                     percentual_taxa_prometida=float(taxa_prometida),
-        #                     percentual_taxa_excedente=100.0,
-        #                     cdi_anual=float(cdi_anual),
-        #                     quantidade_meses=int(prazo_meses),
-        #                     data_aplicacao=data_pesquisa
-        #                 )
-        #                 simulacao = mod_aplicacoes.consolidar_simulacao_faixas(
-        #                     simulacao_faixas
-        #                 )
-        #         else:                
-         
-        #         # =============================================
-        #         # COMPOSIÇÃO DA APLICAÇÃO
-        #         # =============================================
-        #         if taxa_possui_limite == "Sim":
-        #             st.markdown("### Composição da Aplicação")
-        #             valor_faixa_promocional = min(
-        #                 float(valor_aplicacao),
-        #                 float(limite_taxa)
-        #             )
-        #             valor_faixa_excedente = max(
-        #                 float(valor_aplicacao) - float(limite_taxa),
-        #                 0
-        #             )
-        #             st.write(
-        #                 f"**Faixa da taxa anunciada:** "
-        #                 f"{formatar_moeda_br(valor_faixa_promocional)} "
-        #                 f"→ {taxa_prometida:.2f}% do CDI"
-        #             )
-        #             if excedente_nao_informado:
-
-        #                 st.write(
-        #                     f"**Excedente:** "
-        #                     f"{formatar_moeda_br(valor_faixa_excedente)} "
-        #                     f"→ taxa não informada"
-        #                 )
-        #             else:
-        #                 st.write(
-        #                     f"**Excedente:** "
-        #                     f"{formatar_moeda_br(valor_faixa_excedente)} "
-        #                     f"→ {taxa_excedente:.2f}% do CDI"
-        #                 )
-                             
-                
-        
